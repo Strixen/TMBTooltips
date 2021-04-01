@@ -103,7 +103,7 @@ frame:SetScript( "OnShow", RefreshWidgets )
 frame:SetScript( "OnEvent", InitVariables )
 frame:RegisterEvent( "VARIABLES_LOADED" )
 
-local function union ( a, b )
+local function union ( a, b ) --Merge two tables
     local result = {}
     for k,v in pairs ( a ) do
         table.insert( result, v )
@@ -196,6 +196,73 @@ function ParsePriolist(input)
 	return "Done"
 
 end
+
+
+function ParseText(input,dataType)
+
+	if input == nil or dataType == nil then return "NoData" end
+
+	local dataPoint,header = "",""
+	-- WTB switch function.
+	if dataType == "wishlist" then
+		dataPoint = "wishlist"
+		header = "raid_name,character_name,character_class,character_inactive_at,sort_order,item_name,item_id,note,received_at,import_id,item_note,item_prio_note,created_at,updated_at,"
+	elseif dataType == "priolist" then
+		dataPoint = "priolist"
+		header = "raid_name,character_name,character_class,character_inactive_at,sort_order,item_name,item_id,note,received_at,import_id,item_note,item_prio_note,created_at,updated_at,"
+	elseif dataType == "itemnotes" then
+		dataPoint = "itemnotes"
+		header = "name,id,instance_name,source_name,guild_note,prio_note,created_at,updated_at,"
+	end
+
+
+	local parsedLines = {}
+	local t = {}
+	
+	for line in input:gmatch("([^\n]*)\n?") do -- Extract the lines into seperate entries in an array.
+		table.insert(parsedLines, line..",")
+	end
+	if (parsedLines[1] ~= header) then return "Wrong Header" end -- Validate the header
+
+	-- Try and determine the positions of relevant info
+	local magicNumbers = {}
+	local headerData = ParseCSVLine(parsedLines(1))
+	local headerLength = tablelength(headerData)
+
+	magicNumbers.jumpI = headerLength
+	header = "raid_name,character_name,character_class,character_inactive_at,sort_order,item_name,item_id,note,received_at,import_id,item_note,item_prio_note,created_at,updated_at,"
+
+
+	for k,v in pairs(headerData) do -- Go through the header looking for starting index and jump length.
+		if dataPoint = "wishlist" then
+			if v == "character_name" then
+				magicNumbers.offsetOrigin = k
+				magicNumbers.startI = headerLength + k
+			end
+		end
+	end
+
+	-- local tt = {} -- Throwaway table used 
+	for k,l in pairs(parsedLines) do
+		t = union(t,ParseCSVLine(l))
+	end
+
+ 	local dataTable = {}
+	local len = tablelength(t)
+	for i = 16,len,14 do
+	local append = dataTable[tonumber(t[i+5])]
+	if append == nil then append = "" end
+	dataTable[tonumber(t[i+5])] = t[i] .. "["..t[i+3].."]" .. " " .. append -- Add the Prio Notes
+
+	end
+	ItemListsDB.priolist = dataTable -- Add it to peristent storage
+
+	return "Done"
+
+end
+
+
+
 
 function tablelength(T)
 	local count = 0
