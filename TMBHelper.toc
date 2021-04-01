@@ -1,0 +1,10 @@
+## Interface: 11306
+## Version: 0.0.1
+## Title: TMB Tooltip helper
+## Notes: Helper tool for Thats my BIS website.
+## Author: Strix
+## SavedVariables: ItemListsDB
+
+core.lua
+config.lua
+embeds.xml
