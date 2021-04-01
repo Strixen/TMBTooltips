@@ -25,7 +25,7 @@ local function ModifyItemTooltip( tt )
 		local itemWishlist = ItemListsDB.wishlist[itemID]
 		local itemPriolist = ItemListsDB.priolist[itemID]
 		
-	if itemPrios ~= nil or itemPrios ~= "" then
+	if itemPrios ~= nil and itemPrios ~= "" then
 		tt:AddLine("Prio Notes:")
 		tt:AddLine( itemPrios )
 	end
