@@ -5,8 +5,6 @@ local frame = CreateFrame( "Frame" )
 tmb = LibStub("AceAddon-3.0"):NewAddon("TMBHelper", "AceConsole-3.0", "AceEvent-3.0")
 local AceGUI = LibStub("AceGUI-3.0")
 
-local previousItemID = -1
-
 REALM = GetRealmName()
 
 
@@ -26,8 +24,8 @@ local function ModifyItemTooltip( tt )
 		local itemPrios = ItemListsDB.itemnotes[itemID]
 		local itemWishlist = ItemListsDB.wishlist[itemID]
 		local itemPriolist = ItemListsDB.priolist[itemID]
-
-	if itemPrios ~= nil then
+		
+	if itemPrios ~= nil or itemPrios ~= "" then
 		tt:AddLine("Prio Notes:")
 		tt:AddLine( itemPrios )
 	end

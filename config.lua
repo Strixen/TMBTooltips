@@ -10,7 +10,7 @@ local userVariables
 local PROF_CHECK = {}
 local QUEST_CHECK = {}
 
-local function CreateCheckbox( name, x, y, label, tooltip )
+--[[ local function CreateCheckbox( name, x, y, label, tooltip )
 
 	local check = CreateFrame( "CheckButton", name, frame, "ChatConfigCheckButtonTemplate" ) --"OptionsCheckButtonTemplate" )
 	_G[ name .. "Text" ]:SetText( label )
@@ -18,7 +18,7 @@ local function CreateCheckbox( name, x, y, label, tooltip )
 	check:SetPoint( "TOPLEFT", x, y )
 
 	return check
-end
+end ]]
 
 
 
