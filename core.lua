@@ -20,11 +20,9 @@ local function ModifyItemTooltip( tt ) -- Function for modifying the tooltip
 
 	-- Gotten the iten id, pull data from the DB, skip if its the same as last time. 
 
-	if itemID ~= lastID then
 		local itemPrios = ItemListsDB.itemnotes[itemID]
 		local itemWishlist = ItemListsDB.wishlist[itemID]
 		local itemPriolist = ItemListsDB.priolist[itemID]
-	end
 		
 	-- Check if there is anything on that item and display it if thats the case
 
@@ -43,7 +41,6 @@ local function ModifyItemTooltip( tt ) -- Function for modifying the tooltip
 		tt:AddLine( "\124cFFFFFFFF" .. itemPriolist )
 	end
 
-	lastID = itemID
 
 end
 
