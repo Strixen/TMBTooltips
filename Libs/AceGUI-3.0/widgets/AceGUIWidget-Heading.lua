@@ -53,7 +53,6 @@ local function Constructor()
 	left:SetPoint("RIGHT", label, "LEFT", -5, 0)
 	left:SetTexture(137057) -- Interface\\Tooltips\\UI-Tooltip-Border
 	left:SetTexCoord(0.81, 0.94, 0.5, 1)
-	left:SetAlpha(0.1)
 
 	local right = frame:CreateTexture(nil, "BACKGROUND")
 	right:SetHeight(8)

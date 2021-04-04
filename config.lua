@@ -1,7 +1,7 @@
 local _, config = ...
 
 local frame = CreateFrame( "Frame" )
-frame.name = "TMB Helper"
+frame.name = "TMB Tooltips"
 
 ItemListsDB = {}
 
@@ -55,48 +55,19 @@ ppb:SetPoint("TOPLEFT", 30, -110)
 ppb:RegisterForClicks("AnyUp")
 ppb:SetScript("OnClick", function (self, button, down)
 	if pasted == "" then return end
-	self:SetText(ParseText(pasted,"itemnotes"))
+	self:SetText(ParseText(pasted))
 	f:SetText("")
 end)
 
-local pwb = CreateFrame("Button", "parseWishlist", frame, "UIPanelButtonTemplate ")
-pwb:SetText("Wishlist")
-pwb:SetWidth(80)
-pwb:SetPoint("TOPLEFT", 250, -110)
-pwb:RegisterForClicks("AnyUp")
-pwb:SetScript("OnClick", function (self, button, down)
-	if pasted == "" then return end
-	self:SetText(ParseText(pasted,"wishlist"))
-	f:SetText("")
-end)
-
-local pwb = CreateFrame("Button", "parsePriolist", frame, "UIPanelButtonTemplate ")
-pwb:SetText("Prio List")
-pwb:SetWidth(80)
-pwb:SetPoint("TOPLEFT", 450, -110)
-pwb:RegisterForClicks("AnyUp")
-pwb:SetScript("OnClick", function (self, button, down)
-	if pasted == "" then return end
-	self:SetText(ParseText(pasted,"priolist"))
-	f:SetText("")
-end)
 
 frame.okay = SaveAndQuit
 frame:SetScript( "OnShow", RefreshWidgets )
 frame:SetScript( "OnEvent", InitVariables )
 frame:RegisterEvent( "VARIABLES_LOADED" )
 
-function ParseText(input,dataPoint)
-	if input == nil or dataPoint == nil then return "NoData" end
-	local header = ""
-
-	if dataPoint == "wishlist" then
-		header = "raid_name,character_name,character_class,character_inactive_at,sort_order,item_name,item_id,note,received_at,import_id,item_note,item_prio_note,created_at,updated_at,"
-	elseif dataPoint == "priolist" then
-		header = "raid_name,character_name,character_class,character_inactive_at,sort_order,item_name,item_id,note,received_at,import_id,item_note,item_prio_note,created_at,updated_at,"
-	elseif dataPoint == "itemnotes" then
-		header = "name,id,instance_name,source_name,guild_note,prio_note,created_at,updated_at,"
-	end
+function ParseText(input)
+	if input == nil then return "NoData" end
+	local header = "type,raid_name,member_name,character_name,character_class,character_is_alt,character_inactive_at,sort_order,item_name,item_id,note,received_at,import_id,item_note,item_prio_note,item_tier,item_tier_label,created_at,updated_at,"
 
 	local parsedLines = {}
 	local parsedEntries = {}
@@ -119,19 +90,66 @@ function ParseText(input,dataPoint)
 		end
 	end
 	table.remove(parsedEntries) -- Pop of the malformed last entry.
-	local finalTable = {}
+	local noteTable = {}
 
 	for k,e in pairs(parsedEntries) do
-		if dataPoint == "wishlist" or dataPoint == "priolist" then
-			local append = finalTable[ tonumber(e.item_id) ]
-			if append == nil then append = "" end
-			
-			finalTable[tonumber(e.item_id)] = e.character_name .. "[" .. e.sort_order .. "]" .. " " .. append
-		elseif dataPoint == "itemnotes" then 
-			finalTable[tonumber(e.id)] = e.prio_note
-		end
+		local tempTable = {}
+		local tempCharTable = {}
+
+		tempTable = noteTable[ tonumber(e.item_id) ] --Try and load the item element
+		if tempTable == nil then noteTable[ tonumber(e.item_id) ] = {} end -- Make an array because this is the first time the item is seen
+
+		if e.type == "wishlist" then
+			tempCharTable.character_class = e.character_class
+			tempCharTable.character_name = e.character_name
+			tempCharTable.sort_order = tonumber(e.sort_order)
+			tempCharTable.member_name = e.member_name
+			tempCharTable.character_is_alt = tonumber(e.character_is_alt)
+
+			if tempTable ~= nil then tempTable = tempTable.wishlist end -- Look at the wishlist element if it exist then load it
+			if tempTable == nil then --If the loaded item is nil then its the first wish for this item so just save it directly
+				tempTable = {}
+				table.insert(tempTable,tempCharTable)
+			else -- Else insert it into the old one before saving.
+				table.insert(tempTable,tempCharTable)
+			end
+			noteTable[tonumber(e.item_id)].wishlist = tempTable
+		elseif e.type == "prio" then
+			tempCharTable.character_class = e.character_class
+			tempCharTable.character_name = e.character_name
+			tempCharTable.sort_order = tonumber(e.sort_order)
+			tempCharTable.member_name = e.member_name
+			tempCharTable.character_is_alt = tonumber(e.character_is_alt)
+
+			if tempTable ~= nil then tempTable = tempTable.priolist end -- Look at the priolist element if it exist then load it
+			if tempTable == nil then --If the loaded item is nil then its the first wish for this item so just save it directly
+				tempTable = {}
+				table.insert(tempTable,tempCharTable)
+			else -- Else insert it into the old one before saving.
+				table.insert(tempTable,tempCharTable)
+			end
+			noteTable[tonumber(e.item_id)].priolist = tempTable
+		elseif e.type == "received" then 
+			tempCharTable.character_class = e.character_class
+			tempCharTable.character_name = e.character_name
+			tempCharTable.member_name = e.member_name
+			tempCharTable.character_is_alt = tonumber(e.character_is_alt)
+
+			if tempTable ~= nil then tempTable = tempTable.received end -- Look at the recieved element if it exist then load it
+			if tempTable == nil then --If the loaded item is nil then its the first wish for this item so just save it directly
+				tempTable = {}
+				table.insert(tempTable,tempCharTable)
+			else -- Else insert it into the old one before saving.
+				table.insert(tempTable,tempCharTable)
+			end
+			noteTable[tonumber(e.item_id)].received = tempTable
+		elseif e.type == "item_note" then 
+			noteTable[tonumber(e.item_id)].prioNote = e.item_prio_note
+			noteTable[tonumber(e.item_id)].guildNote = e.item_note
+			noteTable[tonumber(e.item_id)].rank = e.item_tier_label
+ 		end
 	end
-	ItemListsDB[dataPoint] = finalTable -- Add it to peristent storage
+	ItemListsDB["itemNotes"] = noteTable -- Add it to peristent storage
 	return "Done"
 end
 
@@ -152,7 +170,7 @@ function ParseCSVLine (line,sep)
 				c = string.sub(line,pos,pos) 
 				if (c == '"') then txt = txt..'"' end 
 				-- check first char AFTER quoted string, if it is another
-				-- quoted string without separator, then append it
+				-- quoted string without separator, then temp it
 				-- this is the way to "escape" the quote char in a quote. example:
 				--   value1,"blub""blip""boing",value3  will result in blub"blip"boing  for the middle
 			until (c ~= '"')
