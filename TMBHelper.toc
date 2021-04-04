@@ -3,10 +3,9 @@
 ## Title: TMB Tooltips
 ## Notes: Helper tool for Thats my BIS website.
 ## Author: Strix
-## SavedVariables: ItemListsDB
+## SavedVariables: ItemListsDB, TMBDB
 ## OptionalDeps: Ace3
 ## X-Embeds: Ace3
 
 embeds.xml
 core.lua
-config.lua
