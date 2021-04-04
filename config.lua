@@ -48,8 +48,8 @@ f:SetMaxBytes(2500)
 
 scrollFrame:SetScrollChild(f)
 
-local ppb = CreateFrame("Button", "parsePrio", frame, "UIPanelButtonTemplate ")
-ppb:SetText("All Items")
+local ppb = CreateFrame("Button", "parseCSV", frame, "UIPanelButtonTemplate ")
+ppb:SetText("Parse CSV")
 ppb:SetWidth(80)
 ppb:SetPoint("TOPLEFT", 30, -110)
 ppb:RegisterForClicks("AnyUp")
