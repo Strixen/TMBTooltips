@@ -4,6 +4,8 @@ local frame = CreateFrame( "Frame" )
 local AceGUI = LibStub("AceGUI-3.0")
 local TMBIcon = LibStub("LibDBIcon-1.0")
 
+-- Fantastic
+
 local classColorsTable = {
 	Warrior = "\124cFFC79C6E",
 	Paladin = "\124cFFF58CBA",
