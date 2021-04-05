@@ -252,8 +252,9 @@ local function ModifyItemTooltip( tt ) -- Function for modifying the tooltip
 		if itemReceived ~= nil then
 			-- Construct the string to be displayed
 			for k,v in pairs(itemReceived) do
+				if k > ItemListsDB.maxNames then break end
 				local altStatus = ""
-				if showAltStatus == 1 and v.character_is_alt == 1 then altStatus = "*" end
+				if displayAlts and v.character_is_alt == 1 then altStatus = "*" end
 				receivedString = receivedString .. altStatus .. classColorsTable[ v.character_class ] .. v.character_name .. " "
 			end
 			tt:AddLine( receivedString )
@@ -265,8 +266,7 @@ local function ModifyItemTooltip( tt ) -- Function for modifying the tooltip
 			local rankData = ""
 			local itemPrioNotes = itemNotes.prioNote
 			if itemPrioNotes ~= nil and itemPrioNotes ~= "" then
-				if itemNotes.rank == nil then itemNotes.rank = "N" end
-				if ItemListsDB.displayRank then rankData = " | \124cFFD97025Rank: " .. rankColorsTable[itemNotes.rank]..itemNotes.rank end
+				if ItemListsDB.displayRank and (itemNotes.rank ~= "") then rankData = " | \124cFFD97025Rank: " .. rankColorsTable[itemNotes.rank]..itemNotes.rank end
 				tt:AddLine("Prio Notes:")
 				tt:AddLine("\124cFFFFFFFF" .. itemPrioNotes .. rankData)
 			end
@@ -283,34 +283,38 @@ local function ModifyItemTooltip( tt ) -- Function for modifying the tooltip
 		end
 		-- %%%%%%%%%%%%%%%%% WISHLIST
 
-		local itemWishes = itemNotes.wishlist
-		local wishlistString = ""
-		if itemWishes ~= nil then
-			-- Construct the string to be displayed
-			for k,v in pairs(itemWishes) do
-				if k > ItemListsDB.maxNames then break end
-				local altStatus = ""
-				if showAltStatus == 1 and v.character_is_alt == 1 then altStatus = "*" end
-				wishlistString = altStatus .. classColorsTable[ v.character_class ] .. v.character_name .. "[" .. v.sort_order .. "]" .. " " .. wishlistString
+		if ItemListsDB.displayWishes then
+			local itemWishes = itemNotes.wishlist
+			local wishlistString = ""
+			if itemWishes ~= nil then
+				-- Construct the string to be displayed
+				for k,v in pairs(itemWishes) do
+					if k > ItemListsDB.maxNames then break end
+					local altStatus = ""
+					if displayAlts and v.character_is_alt == 1 then altStatus = "*" end
+					wishlistString = altStatus .. classColorsTable[ v.character_class ] .. v.character_name .. "[" .. v.sort_order .. "]" .. " " .. wishlistString
+				end
+				tt:AddLine("\124cFFFF8000" .. "Wishes:")
+				tt:AddLine( wishlistString )
 			end
-			tt:AddLine("\124cFFFF8000" .. "Wishes:")
-			tt:AddLine( wishlistString )
 		end
 
 		-- %%%%%%%%%%%%%%%%% PRIOS
 
-		local itemPrios = itemNotes.priolist
-		local prioListString = ""
-		if itemPrios ~= nil then
-			-- Construct the string to be displayed
-			for k,v in pairs(itemPrios) do
-				if k > ItemListsDB.maxNames then break end
-				local altStatus = ""
-				if showAltStatus == 1 and v.character_is_alt == 1 then altStatus = "*" end
-				prioListString = altStatus .. classColorsTable[ v.character_class ] .. v.character_name .. "[" .. v.sort_order .. "]" .. " " .. prioListString 
+		if ItemListsDB.displayPrios then
+			local itemPrios = itemNotes.priolist
+			local prioListString = ""
+			if itemPrios ~= nil then
+				-- Construct the string to be displayed
+				for k,v in pairs(itemPrios) do
+					if k > ItemListsDB.maxNames then break end
+					local altStatus = ""
+					if displayAlts and v.character_is_alt == 1 then altStatus = "*" end
+					prioListString = altStatus .. classColorsTable[ v.character_class ] .. v.character_name .. "[" .. v.sort_order .. "]" .. " " .. prioListString 
+				end
+				tt:AddLine("\124cFFFF8000" .. "Prio:")
+				tt:AddLine( prioListString )
 			end
-			tt:AddLine("\124cFFFF8000" .. "Prio:")
-			tt:AddLine( prioListString )
 		end
 
 	end
