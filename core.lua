@@ -82,7 +82,7 @@ function popupConfig()
 	textboxGroup:SetRelativeWidth(0.6)
 
 	local checkLabel = AceGUI:Create("Label")
-    checkLabel:SetText("Display settings")
+    checkLabel:SetText("Tooltip display settings")
 	checkboxGroup:AddChild(checkLabel)
 
 	local check1 = AceGUI:Create("CheckBox")
