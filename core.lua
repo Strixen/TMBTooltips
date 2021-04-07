@@ -49,8 +49,9 @@ OnClick = function(self,button,down)
 end,
 OnTooltipShow = function(tooltip) -- Icon tooltip
 	tooltip:AddLine("That's My BIS Tooltips")
-	tooltip:AddLine("Leftclick Enable/Disable display")
-	tooltip:AddLine("Rightclick open config")
+	tooltip:AddLine("Left click : Enable/Disable display")
+	tooltip:AddLine("Right click: Open config")
+	tooltip:AddLine("Hold Alt   : Change tooltip display")
 end,
 })
 
