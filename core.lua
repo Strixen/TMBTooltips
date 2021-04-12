@@ -255,7 +255,7 @@ local function ModifyItemTooltip( tt ) -- Function for modifying the tooltip
 			for k,v in pairs(itemReceived) do
 				if k > ItemListsDB.maxNames then break end
 				local altStatus = ""
-				if displayAlts and v.character_is_alt == 1 then altStatus = "*" end
+				if ItemListsDB.displayAlts and v.character_is_alt == 1 then altStatus = "*" end
 				receivedString = receivedString .. altStatus .. classColorsTable[ v.character_class ] .. v.character_name .. " "
 			end
 			tt:AddLine( receivedString )
@@ -285,34 +285,85 @@ local function ModifyItemTooltip( tt ) -- Function for modifying the tooltip
 		-- %%%%%%%%%%%%%%%%% WISHLIST
 
 		if ItemListsDB.displayWishes then
-			local itemWishes = itemNotes.wishlist
+			local itemWishes = {}
 			local wishlistString = ""
-			if itemWishes ~= nil then
-				-- Construct the string to be displayed
-				for k,v in pairs(itemWishes) do
-					if k > ItemListsDB.maxNames then break end
-					local altStatus = ""
-					if displayAlts and v.character_is_alt == 1 then altStatus = "*" end
-					wishlistString = altStatus .. classColorsTable[ v.character_class ] .. v.character_name .. "[" .. v.sort_order .. "]" .. " " .. wishlistString
+			local smallestKey = 0
+			local smallestWish = {}
+			if itemNotes.wishlist ~= nil then
+				for k,v in pairs(itemNotes.wishlist) do
+					itemWishes[k] = v
 				end
+				-- Construct the string to be displayed
+				for i = 1,ItemListsDB.maxNames,1 do
+					local smallestOrder = 99999
+					for k,v in pairs(itemWishes) do
+						if v.sort_order <= smallestOrder then
+							smallestKey = k
+							smallestOrder = v.sort_order
+						end
+					end
+					smallestWish = table.remove(itemWishes,smallestKey)
+					if smallestWish == nil then break end
+					local altStatus = ""
+					local linebreaker = " "
+					if i % 5 == 0 then linebreaker = "\n" end
+					if ItemListsDB.displayAlts and smallestWish.character_is_alt == 1 then altStatus = "*" end
+					wishlistString = wishlistString .. classColorsTable[ smallestWish.character_class ] .. altStatus .. smallestWish.character_name .. "[" .. smallestWish.sort_order .. "]" .. linebreaker
+				end
+
 				tt:AddLine("\124cFFFF8000" .. "Wishes:")
 				tt:AddLine( wishlistString )
 			end
 		end
 
-		-- %%%%%%%%%%%%%%%%% PRIOS
-
-		if ItemListsDB.displayPrios then
-			local itemPrios = itemNotes.priolist
-			local prioListString = ""
-			if itemPrios ~= nil then
-				-- Construct the string to be displayed
-				for k,v in pairs(itemPrios) do
+		--[[ 				for k,v in pairs(itemWishes) do
 					if k > ItemListsDB.maxNames then break end
 					local altStatus = ""
 					if displayAlts and v.character_is_alt == 1 then altStatus = "*" end
-					prioListString = altStatus .. classColorsTable[ v.character_class ] .. v.character_name .. "[" .. v.sort_order .. "]" .. " " .. prioListString 
+					wishlistString = altStatus .. classColorsTable[ v.character_class ] .. v.character_name .. "[" .. v.sort_order .. "]" .. " " .. wishlistString
+				end ]]
+--[[ 
+				local itemPrios = itemNotes.priolist
+				local prioListString = ""
+				if itemPrios ~= nil then
+					-- Construct the string to be displayed
+					for k,v in pairs(itemPrios) do
+						if k > ItemListsDB.maxNames then break end
+						local altStatus = ""
+						if ItemListsDB.displayAlts and v.character_is_alt == 1 then altStatus = "*" end
+						prioListString = altStatus .. classColorsTable[ v.character_class ] .. v.character_name .. "[" .. v.sort_order .. "]" .. " " .. prioListString 
+					end
+	 ]]
+
+		-- %%%%%%%%%%%%%%%%% PRIOS
+
+		if ItemListsDB.displayPrios then
+			local itemPrios = {}
+			local prioListString = ""
+			local smallestPrioKey = 0
+			local smallestPrio = {}
+			if itemNotes.priolist ~= nil then
+				for k,v in pairs(itemNotes.priolist) do
+					itemPrios[k] = v
 				end
+				-- Construct the string to be displayed
+				for i = 1,ItemListsDB.maxNames,1 do
+					local smallestPrioOrder = 99999
+					for k,v in pairs(itemPrios) do
+						if v.sort_order <= smallestPrioOrder then
+							smallestPrioKey = k
+							smallestPrioOrder = v.sort_order
+						end
+					end
+					smallestPrio = table.remove(itemPrios,smallestPrioKey)
+					if smallestPrio == nil then break end
+					local altStatus = ""
+					local linebreaker = " "
+					if i % 5 == 0 then linebreaker = "\n" end
+					if ItemListsDB.displayAlts and smallestPrio.character_is_alt == 1 then altStatus = "*" end
+					prioListString = prioListString .. classColorsTable[ smallestPrio.character_class ] .. altStatus .. smallestPrio.character_name .. "[" .. smallestPrio.sort_order .. "]" .. linebreaker
+				end
+	
 				tt:AddLine("\124cFFFF8000" .. "Prio:")
 				tt:AddLine( prioListString )
 			end
