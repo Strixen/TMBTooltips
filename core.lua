@@ -49,9 +49,11 @@ OnClick = function(self,button,down)
 end,
 OnTooltipShow = function(tooltip) -- Icon tooltip
 	tooltip:AddLine("That's My BIS Tooltips")
+	tooltip:AddLine("Version    : 0.3")
 	tooltip:AddLine("Left click : Enable/Disable display")
 	tooltip:AddLine("Right click: Open config")
 	tooltip:AddLine("Hold Alt   : Change tooltip display")
+	tooltip:AddLine("Chat CMD   : /tmb")
 end,
 })
 
@@ -208,8 +210,11 @@ end
 function ThatsMyBis:OnInitialize() --Fires when the addon is being set up.
 	self.db = LibStub("AceDB-3.0"):New("TMBDB", { profile = { minimap = { hide = false, }, }, })
 	TMBIcon:Register("TMBTooltips", TMBLDB,  self.db.profile.minimap) 
+	self:RegisterChatCommand("tmb", "CommandTheBunnies") 
 
 end
+
+
 
 function ThatsMyBis:OnEnable() --Fires when the addon loads, makes sure there is a db to look at.
 
@@ -229,6 +234,31 @@ function ThatsMyBis:OnEnable() --Fires when the addon loads, makes sure there is
 	end
 	
 end
+
+function ThatsMyBis:CommandTheBunnies(arg)
+	if arg == "" then 
+		popupConfig()
+	elseif arg == "minimap" then
+		self.db.profile.minimap.hide = not self.db.profile.minimap.hide 
+		if self.db.profile.minimap.hide then
+			TMBIcon:Hide("TMBTooltips") 
+		else 
+			TMBIcon:Show("TMBTooltips") 
+		end 
+	elseif arg == "toggle" then
+		if ItemListsDB.enabled then 
+			statusEnableText = "TMB Tooltips is currently: Disabled"
+			ItemListsDB.enabled = false
+		else
+			statusEnableText = "TMB Tooltips is currently: Enabled"
+			ItemListsDB.enabled = true
+		end
+		ThatsMyBis:Print(statusEnableText)
+	else 
+		ThatsMyBis:Print("Thats my BIS command arguments\nminimap - toggle minimap icon\ntoogle - enable/disable function\nno argument - open config\nanything else - show this text")
+	end
+
+end 
 
 local function ModifyItemTooltip( tt ) -- Function for modifying the tooltip
 	if not ItemListsDB.enabled then return end
@@ -373,8 +403,8 @@ local function ModifyItemTooltip( tt ) -- Function for modifying the tooltip
 
 end
 
-
-ChatFrame_OnHyperlinkShow = function(...) -- Hook into the static item info window, not the tooltip.
+-- TODO: Affects more than the static item frame. Need to look into this later
+--[[ ChatFrame_OnHyperlinkShow = function(...) -- Hook into the static item info window, not the tooltip.
     local chatFrame, link, text, button = ...
     local result = origChatFrame_OnHyperlinkShow(...)
     
@@ -387,8 +417,8 @@ ChatFrame_OnHyperlinkShow = function(...) -- Hook into the static item info wind
 
         ItemRefTooltip:Show(); ItemRefTooltip:Show()
 
-    return result
-end
+    --return result
+end ]]
 
 
 
