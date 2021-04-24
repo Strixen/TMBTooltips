@@ -1,8 +1,8 @@
 ## Interface: 11306
-## Version: 0.3
+## Version: 0.4
 ## Title: TMB Tooltips
 ## Notes: Helper tool for Thats my BIS website.
-## Author: Strix
+## Author: Strix@Earthshaker
 ## SavedVariables: ItemListsDB, TMBDB
 ## OptionalDeps: Ace3
 ## X-Embeds: Ace3

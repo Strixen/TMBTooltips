@@ -77,7 +77,7 @@ function popupConfig()
 	popup.sizer_s:Hide()
 	popup.sizer_e:Hide()
 	popup:SetWidth(600)
-	popup:SetHeight(300)
+	popup:SetHeight(340)
 	local checkboxGroup = AceGUI:Create("SimpleGroup")
 	checkboxGroup:SetRelativeWidth(0.4)
 	local textboxGroup = AceGUI:Create("SimpleGroup")
@@ -116,6 +116,23 @@ function popupConfig()
 	check5:SetLabel("Display Alt *")
 	check5:SetValue(ItemListsDB.displayAlts)
 	checkboxGroup:AddChild(check5)
+
+	local check7 = AceGUI:Create("CheckBox")
+	check7:SetLabel("Hide received wishes")
+	check7:SetValue(ItemListsDB.hideReceivedWishes)
+	checkboxGroup:AddChild(check7)
+
+	local check8 = AceGUI:Create("CheckBox")
+	check8:SetLabel("Hide received prios")
+	check8:SetValue(ItemListsDB.hideReceivedPrios)
+	checkboxGroup:AddChild(check8)
+
+	local check9 = AceGUI:Create("CheckBox")
+	check9:SetLabel("Always show received")
+	check9:SetValue(ItemListsDB.forceReceivedList)
+	checkboxGroup:AddChild(check9)
+
+	-- END OF CHECKBOXES
 
 	local slider1 = AceGUI:Create("Slider")
 	slider1:SetValue(ItemListsDB.maxNames)
@@ -179,9 +196,17 @@ function popupConfig()
 	check5:SetCallback("OnValueChanged", function(obj, evt, val)
 		ItemListsDB.displayAlts = check5:GetValue()
 	end)
-
 	check6:SetCallback("OnValueChanged", function(obj, evt, val)
 		ItemListsDB.displayGuildNote = check6:GetValue()
+	end)
+	check7:SetCallback("OnValueChanged", function(obj, evt, val)
+		ItemListsDB.hideReceivedWishes = check7:GetValue()
+	end)
+	check8:SetCallback("OnValueChanged", function(obj, evt, val)
+		ItemListsDB.hideReceivedPrios = check8:GetValue()
+	end)
+	check9:SetCallback("OnValueChanged", function(obj, evt, val)
+		ItemListsDB.forceReceivedList = check9:GetValue()
 	end)
 
 	slider1:SetCallback("OnMouseUp", function(slid)
@@ -228,6 +253,9 @@ function ThatsMyBis:OnEnable() --Fires when the addon loads, makes sure there is
 	if ItemListsDB.displayPrios == nil then ItemListsDB.displayPrios = true end
 	if ItemListsDB.displayAlts == nil then ItemListsDB.displayAlts = true end
 	if ItemListsDB.maxNames == nil then ItemListsDB.maxNames = 3 end
+	if ItemListsDB.hideReceivedWishes == nil then ItemListsDB.hideReceivedWishes = false end
+	if ItemListsDB.hideReceivedPrios == nil then ItemListsDB.hideReceivedPrios = false end
+	if ItemListsDB.forceReceivedList == nil then ItemListsDB.forceReceivedList = false end
 
 	if ItemListsDB.enabled then 
 		statusEnableText = "TMB Tooltips is currently: Enabled"
@@ -276,22 +304,7 @@ local function ModifyItemTooltip( tt ) -- Function for modifying the tooltip
 	local itemNotes = ItemListsDB.itemNotes[itemID]
 	if itemNotes == nil then return end -- Item not in DB, escape out of function.
 
-	if IsAltKeyDown() then --Display something different if alt is held down.
-		local itemReceived = itemNotes.received
-		local receivedString = ""
-		tt:AddLine("Received item:")
-		if itemReceived ~= nil then
-			-- Construct the string to be displayed
-			for k,v in pairs(itemReceived) do
-				if k > ItemListsDB.maxNames then break end
-				local altStatus = ""
-				if ItemListsDB.displayAlts and v.character_is_alt == 1 then altStatus = "*" end
-				receivedString = receivedString .. altStatus .. classColorsTable[ v.character_class ] .. v.character_name .. " "
-			end
-			tt:AddLine( receivedString )
-		end
-	else
-
+	if IsAltKeyDown() == false then --Display something different if alt is held down.
 		-- %%%%%%%%%%%%%%%%% PRIO NOTES
 		if ItemListsDB.displayPrioNote then
 			local rankData = ""
@@ -319,14 +332,30 @@ local function ModifyItemTooltip( tt ) -- Function for modifying the tooltip
 			local wishlistString = ""
 			local smallestKey = 0
 			local smallestWish = {}
+			local add = true
+			local keyIndex = 1
 			if itemNotes.wishlist ~= nil then
 				for k,v in pairs(itemNotes.wishlist) do
-					itemWishes[k] = v
+					add = true
+					if itemNotes.received ~= null and ItemListsDB.hideReceivedWishes then 
+						for key,value in pairs(itemNotes.received) do
+							if value.character_name == v.character_name then
+								add = false
+							end
+						end
+					end 
+					if add == true then
+						itemWishes[keyIndex] = v 
+						keyIndex = keyIndex + 1
+					end
+					
+
 				end
 				-- Construct the string to be displayed
 				for i = 1,ItemListsDB.maxNames,1 do
 					local smallestOrder = 99999
 					for k,v in pairs(itemWishes) do
+
 						if v.sort_order <= smallestOrder then
 							smallestKey = k
 							smallestOrder = v.sort_order
@@ -372,9 +401,24 @@ local function ModifyItemTooltip( tt ) -- Function for modifying the tooltip
 			local prioListString = ""
 			local smallestPrioKey = 0
 			local smallestPrio = {}
+			local add = true
+			local keyIndex = 1
 			if itemNotes.priolist ~= nil then
 				for k,v in pairs(itemNotes.priolist) do
-					itemPrios[k] = v
+					add = true
+					if itemNotes.received ~= null and ItemListsDB.hideReceivedPrios then 
+						for key,value in pairs(itemNotes.received) do
+							if value.character_name == v.character_name then
+								add = false
+							end
+						end
+					end 
+					if add == true then
+						itemPrios[keyIndex] = v 
+						keyIndex = keyIndex + 1
+					end
+					
+
 				end
 				-- Construct the string to be displayed
 				for i = 1,ItemListsDB.maxNames,1 do
@@ -399,8 +443,37 @@ local function ModifyItemTooltip( tt ) -- Function for modifying the tooltip
 			end
 		end
 
-	end
+		if ItemListsDB.forceReceivedList == true then
+			local itemReceived = itemNotes.received
+			local receivedString = ""
+			tt:AddLine("Received item:")
+			if itemReceived ~= nil then
+				-- Construct the string to be displayed
+				for k,v in pairs(itemReceived) do
+					if k > ItemListsDB.maxNames then break end
+					local altStatus = ""
+					if ItemListsDB.displayAlts and v.character_is_alt == 1 then altStatus = "*" end
+					receivedString = receivedString .. altStatus .. classColorsTable[ v.character_class ] .. v.character_name .. " "
+				end
+				tt:AddLine( receivedString )
+			end
+		end
 
+	else 
+		local itemReceived = itemNotes.received
+		local receivedString = ""
+		tt:AddLine("Received item:")
+		if itemReceived ~= nil then
+			-- Construct the string to be displayed
+			for k,v in pairs(itemReceived) do
+				if k > ItemListsDB.maxNames then break end
+				local altStatus = ""
+				if ItemListsDB.displayAlts and v.character_is_alt == 1 then altStatus = "*" end
+				receivedString = receivedString .. altStatus .. classColorsTable[ v.character_class ] .. v.character_name .. " "
+			end
+			tt:AddLine( receivedString )
+		end
+	end
 end
 
 -- TODO: Affects more than the static item frame. Need to look into this later
