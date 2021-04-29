@@ -49,7 +49,7 @@ OnClick = function(self,button,down)
 end,
 OnTooltipShow = function(tooltip) -- Icon tooltip
 	tooltip:AddLine("That's My BIS Tooltips")
-	tooltip:AddLine("Version    : 0.3")
+	tooltip:AddLine("Version    : 0.5") -- EDIT TOC and PKMETA
 	tooltip:AddLine("Left click : Enable/Disable display")
 	tooltip:AddLine("Right click: Open config")
 	tooltip:AddLine("Hold Alt   : Change tooltip display")
@@ -132,6 +132,16 @@ function popupConfig()
 	check9:SetValue(ItemListsDB.forceReceivedList)
 	checkboxGroup:AddChild(check9)
 
+	local check10 = AceGUI:Create("CheckBox")
+	check10:SetLabel("Disable when not in raid")
+	check10:SetValue(ItemListsDB.onlyInRaid)
+	checkboxGroup:AddChild(check10)
+
+	local check11 = AceGUI:Create("CheckBox")
+	check11:SetLabel("Exclude non-raid members")
+	check11:SetValue(ItemListsDB.onlyRaidMembers)
+	checkboxGroup:AddChild(check11)
+
 	-- END OF CHECKBOXES
 
 	local slider1 = AceGUI:Create("Slider")
@@ -139,7 +149,7 @@ function popupConfig()
 	slider1:SetSliderValues(1,10,1)
 	slider1:SetLabel("How many names to display")
 	slider1:SetRelativeWidth(1)
-	checkboxGroup:AddChild(slider1)
+	textboxGroup:AddChild(slider1)
 
 	local inputfield = AceGUI:Create("MultiLineEditBox")
 	inputfield:SetLabel("Paste CSV here")
@@ -209,6 +219,14 @@ function popupConfig()
 		ItemListsDB.forceReceivedList = check9:GetValue()
 	end)
 
+	check10:SetCallback("OnValueChanged", function(obj, evt, val)
+		ItemListsDB.onlyInRaid = check10:GetValue()
+	end)
+
+	check11:SetCallback("OnValueChanged", function(obj, evt, val)
+		ItemListsDB.onlyRaidMembers = check11:GetValue()
+	end)
+
 	slider1:SetCallback("OnMouseUp", function(slid)
 		ItemListsDB.maxNames = slid:GetValue()
 	end)
@@ -235,7 +253,7 @@ end
 function ThatsMyBis:OnInitialize() --Fires when the addon is being set up.
 	self.db = LibStub("AceDB-3.0"):New("TMBDB", { profile = { minimap = { hide = false, }, }, })
 	TMBIcon:Register("TMBTooltips", TMBLDB,  self.db.profile.minimap) 
-	self:RegisterChatCommand("tmb", "CommandTheBunnies") 
+	self:RegisterChatCommand("tmb", "ChatCommands") 
 
 end
 
@@ -256,6 +274,8 @@ function ThatsMyBis:OnEnable() --Fires when the addon loads, makes sure there is
 	if ItemListsDB.hideReceivedWishes == nil then ItemListsDB.hideReceivedWishes = false end
 	if ItemListsDB.hideReceivedPrios == nil then ItemListsDB.hideReceivedPrios = false end
 	if ItemListsDB.forceReceivedList == nil then ItemListsDB.forceReceivedList = false end
+	if ItemListsDB.onlyInRaid == nil then ItemListsDB.onlyInRaid = false end
+	if ItemListsDB.onlyRaidMembers == nil then ItemListsDB.onlyRaidMembers = false end
 
 	if ItemListsDB.enabled then 
 		statusEnableText = "TMB Tooltips is currently: Enabled"
@@ -263,7 +283,7 @@ function ThatsMyBis:OnEnable() --Fires when the addon loads, makes sure there is
 	
 end
 
-function ThatsMyBis:CommandTheBunnies(arg)
+function ThatsMyBis:ChatCommands(arg)
 	if arg == "" then 
 		popupConfig()
 	elseif arg == "minimap" then
@@ -282,6 +302,8 @@ function ThatsMyBis:CommandTheBunnies(arg)
 			ItemListsDB.enabled = true
 		end
 		ThatsMyBis:Print(statusEnableText)
+	elseif arg == "test" then
+		ThatsMyBis:Print("Super secret test command! If you click your mailbox now the addon will forward a donation of 100g to Strix-Earthshaker. Thank you for your contribution <3")
 	else 
 		ThatsMyBis:Print("Thats my BIS command arguments\nminimap - toggle minimap icon\ntoogle - enable/disable function\nno argument - open config\nanything else - show this text")
 	end
@@ -290,6 +312,9 @@ end
 
 local function ModifyItemTooltip( tt ) -- Function for modifying the tooltip
 	if not ItemListsDB.enabled then return end
+	if ItemListsDB.onlyInRaid then
+		if not IsInRaid() then return end
+	end
 	local itemName, itemLink = tt:GetItem() 
 	if not itemName then return end
 	local itemID = select( 1, GetItemInfoInstant( itemName ) )
@@ -332,21 +357,33 @@ local function ModifyItemTooltip( tt ) -- Function for modifying the tooltip
 			local wishlistString = ""
 			local smallestKey = 0
 			local smallestWish = {}
-			local add = true
 			local keyIndex = 1
+			local totalHiddenWishes = 0
+			local totalReceivedWishes = 0
 			if itemNotes.wishlist ~= nil then
+				add = false
 				for k,v in pairs(itemNotes.wishlist) do
-					add = true
+					if ItemListsDB.onlyRaidMembers then
+						if UnitInRaid(v.character_name) ~= nil then
+							add = true
+						end
+					else
+						add = true
+					end
+
 					if itemNotes.received ~= null and ItemListsDB.hideReceivedWishes then 
 						for key,value in pairs(itemNotes.received) do
 							if value.character_name == v.character_name then
 								add = false
+								totalReceivedWishes = totalReceivedWishes + 1
 							end
 						end
 					end 
 					if add == true then
 						itemWishes[keyIndex] = v 
 						keyIndex = keyIndex + 1
+					else
+						totalHiddenWishes = totalHiddenWishes + 1
 					end
 					
 
@@ -369,8 +406,18 @@ local function ModifyItemTooltip( tt ) -- Function for modifying the tooltip
 					if ItemListsDB.displayAlts and smallestWish.character_is_alt == 1 then altStatus = "*" end
 					wishlistString = wishlistString .. classColorsTable[ smallestWish.character_class ] .. altStatus .. smallestWish.character_name .. "[" .. smallestWish.sort_order .. "]" .. linebreaker
 				end
-
-				tt:AddLine("\124cFFFF8000" .. "Wishes:")
+				local optionalString = ""
+				if totalHiddenWishes-totalReceivedWishes > 0 then 
+					optionalString = optionalString .. totalHiddenWishes-totalReceivedWishes .. " Hidden "
+				end
+				if totalReceivedWishes > 0 then
+					optionalString = optionalString .. totalReceivedWishes .. " Received "
+				end
+				if optionalString ~= "" then 
+					tt:AddLine("\124cFFFF8000" .. "Wishes: ( ".. optionalString .. ")" )	
+				else
+					tt:AddLine("\124cFFFF8000" .. "Wishes:")
+				end	
 				tt:AddLine( wishlistString )
 			end
 		end
@@ -401,21 +448,33 @@ local function ModifyItemTooltip( tt ) -- Function for modifying the tooltip
 			local prioListString = ""
 			local smallestPrioKey = 0
 			local smallestPrio = {}
-			local add = true
-			local keyIndex = 1
+			local totalHiddenPrios = 0
+			local totalReceivedPrios = 0
+			keyIndex = 1
 			if itemNotes.priolist ~= nil then
 				for k,v in pairs(itemNotes.priolist) do
-					add = true
+					add = false
+					if ItemListsDB.onlyRaidMembers then
+						if UnitInRaid(v.character_name) ~= nil then
+							add = true
+						end
+					else
+						add = true
+					end
+
 					if itemNotes.received ~= null and ItemListsDB.hideReceivedPrios then 
 						for key,value in pairs(itemNotes.received) do
 							if value.character_name == v.character_name then
 								add = false
+								totalReceivedPrios = totalReceivedPrios + 1
 							end
 						end
 					end 
 					if add == true then
 						itemPrios[keyIndex] = v 
 						keyIndex = keyIndex + 1
+					else
+						totalHiddenPrios = totalHiddenPrios + 1
 					end
 					
 
@@ -438,7 +497,18 @@ local function ModifyItemTooltip( tt ) -- Function for modifying the tooltip
 					prioListString = prioListString .. classColorsTable[ smallestPrio.character_class ] .. altStatus .. smallestPrio.character_name .. "[" .. smallestPrio.sort_order .. "]" .. linebreaker
 				end
 	
-				tt:AddLine("\124cFFFF8000" .. "Prio:")
+				optionalString = ""
+				if totalHiddenPrios-totalReceivedPrios > 0 then 
+					optionalString = optionalString .. totalHiddenPrios-totalReceivedPrios .. " Hidden "
+				end
+				if totalReceivedPrios > 0 then
+					optionalString = optionalString .. totalReceivedPrios .. " Received "
+				end
+				if optionalString ~= "" then 
+					tt:AddLine("\124cFFFF8000" .. "Prios: ( ".. optionalString .. ")" )	
+				else
+					tt:AddLine("\124cFFFF8000" .. "Prios:")
+				end	
 				tt:AddLine( prioListString )
 			end
 		end
