@@ -1,4 +1,5 @@
-ThatsMyBis = LibStub("AceAddon-3.0"):NewAddon("ThatsMyBis", "AceConsole-3.0", "AceEvent-3.0")
+ThatsMyBis = LibStub("AceAddon-3.0"):NewAddon("ThatsMyBis", "AceConsole-3.0", "AceEvent-3.0", "AceComm-3.0")
+local LibAceSerializer = LibStub:GetLibrary("AceSerializer-3.0")
 
 local frame = CreateFrame( "Frame" )
 local AceGUI = LibStub("AceGUI-3.0")
@@ -29,6 +30,10 @@ local origChatFrame_OnHyperlinkShow = ChatFrame_OnHyperlinkShow
 
 local statusEnableText = "TMB Tooltips is currently: Disabled"
 
+local currentPlayer = UnitName("player")
+
+
+
 local TMBLDB = LibStub("LibDataBroker-1.1"):NewDataObject("TMBTooltips", {
 type = "data source",
 text = "TMB Tooltips",
@@ -49,14 +54,57 @@ OnClick = function(self,button,down)
 end,
 OnTooltipShow = function(tooltip) -- Icon tooltip
 	tooltip:AddLine("That's My BIS Tooltips")
-	tooltip:AddLine("Version    : 0.5") -- EDIT TOC and PKMETA
+	tooltip:AddLine("Version    : 0.5b") -- EDIT TOC and PKMETA
 	tooltip:AddLine("Left click : Enable/Disable display")
 	tooltip:AddLine("Right click: Open config")
 	tooltip:AddLine("Hold Alt   : Change tooltip display")
 	tooltip:AddLine("Chat CMD   : /tmb")
+	tooltip:AddLine("Database ID: " .. ItemListsDB.DBImportID)
 end,
 })
 
+function showSync()
+	if syncShown then
+		return
+	end
+
+	syncShown = true
+
+	syncFrame = AceGUI:Create("Frame")
+	syncFrame:SetTitle("Sync TMB Data")
+	syncFrame.sizer_se:Hide()
+	syncFrame.sizer_s:Hide()
+	syncFrame.sizer_e:Hide()
+	syncFrame:SetWidth(300)
+	syncFrame:SetHeight(200)
+	syncFrame:SetLayout("Flow")
+	local targetField = AceGUI:Create("EditBox")
+	targetField:SetLabel("Who do you want to send data to?")
+	targetField:DisableButton(true)
+	syncFrame:AddChild(targetField)
+	
+	local SyncButton = AceGUI:Create("Button")
+	SyncButton:SetText("Sync")
+	syncFrame:AddChild(SyncButton)
+	SyncButton:SetCallback("OnClick", function (obj, button, down)
+		-- Start sync operation
+		ThatsMyBis:SendComm(targetField:GetText(), "RTS", ItemListsDB.DBImportID)
+		
+	end)
+
+
+
+
+
+
+
+	syncFrame:SetCallback("OnClose", 
+	function(widget)
+	  AceGUI:Release(widget)
+	  syncShown = false
+	end
+   )
+end
 
 
 function popupConfig()
@@ -254,6 +302,7 @@ function ThatsMyBis:OnInitialize() --Fires when the addon is being set up.
 	self.db = LibStub("AceDB-3.0"):New("TMBDB", { profile = { minimap = { hide = false, }, }, })
 	TMBIcon:Register("TMBTooltips", TMBLDB,  self.db.profile.minimap) 
 	self:RegisterChatCommand("tmb", "ChatCommands") 
+	self:RegisterComm("TMBSync", ThatsMyBis:OnCommReceived())
 
 end
 
@@ -276,6 +325,7 @@ function ThatsMyBis:OnEnable() --Fires when the addon loads, makes sure there is
 	if ItemListsDB.forceReceivedList == nil then ItemListsDB.forceReceivedList = false end
 	if ItemListsDB.onlyInRaid == nil then ItemListsDB.onlyInRaid = false end
 	if ItemListsDB.onlyRaidMembers == nil then ItemListsDB.onlyRaidMembers = false end
+	if ItemListsDB.DBImportID == nil then ItemListsDB.DBImportID = 0 end
 
 	if ItemListsDB.enabled then 
 		statusEnableText = "TMB Tooltips is currently: Enabled"
@@ -302,8 +352,8 @@ function ThatsMyBis:ChatCommands(arg)
 			ItemListsDB.enabled = true
 		end
 		ThatsMyBis:Print(statusEnableText)
-	elseif arg == "test" then
-		ThatsMyBis:Print("Super secret test command! If you click your mailbox now the addon will forward a donation of 100g to Strix-Earthshaker. Thank you for your contribution <3")
+	elseif arg == "sync" then
+		showSync()
 	else 
 		ThatsMyBis:Print("Thats my BIS command arguments\nminimap - toggle minimap icon\ntoogle - enable/disable function\nno argument - open config\nanything else - show this text")
 	end
@@ -421,26 +471,6 @@ local function ModifyItemTooltip( tt ) -- Function for modifying the tooltip
 				tt:AddLine( wishlistString )
 			end
 		end
-
-		--[[ 				for k,v in pairs(itemWishes) do
-					if k > ItemListsDB.maxNames then break end
-					local altStatus = ""
-					if displayAlts and v.character_is_alt == 1 then altStatus = "*" end
-					wishlistString = altStatus .. classColorsTable[ v.character_class ] .. v.character_name .. "[" .. v.sort_order .. "]" .. " " .. wishlistString
-				end ]]
---[[ 
-				local itemPrios = itemNotes.priolist
-				local prioListString = ""
-				if itemPrios ~= nil then
-					-- Construct the string to be displayed
-					for k,v in pairs(itemPrios) do
-						if k > ItemListsDB.maxNames then break end
-						local altStatus = ""
-						if ItemListsDB.displayAlts and v.character_is_alt == 1 then altStatus = "*" end
-						prioListString = altStatus .. classColorsTable[ v.character_class ] .. v.character_name .. "[" .. v.sort_order .. "]" .. " " .. prioListString 
-					end
-	 ]]
-
 		-- %%%%%%%%%%%%%%%%% PRIOS
 
 		if ItemListsDB.displayPrios then
@@ -571,7 +601,7 @@ end
 
 function ParseText(input)
 	if input == nil then return "NoData" end
-	local header = "type,raid_name,member_name,character_name,character_class,character_is_alt,character_inactive_at,sort_order,item_name,item_id,note,received_at,import_id,item_note,item_prio_note,item_tier,item_tier_label,created_at,updated_at,"
+	local header = "type,raid_group_name,member_name,character_name,character_class,character_is_alt,character_inactive_at,character_note,sort_order,item_name,item_id,is_offspec,note,received_at,import_id,item_note,item_prio_note,item_tier,item_tier_label,created_at,updated_at,"
 
 	local parsedLines = {}
 	local parsedEntries = {}
@@ -588,6 +618,8 @@ function ParseText(input)
 			headerData = ParseCSVLine(parsedLines[lineKey])
 		else
 			for key,value in pairs(ParseCSVLine(line)) do
+				if key == 1 and value == "item_note" then
+				end
 				entry[ headerData[key] ] = value
 			end
 			table.insert(parsedEntries, entry)
@@ -654,6 +686,7 @@ function ParseText(input)
  		end
 	end
 	ItemListsDB["itemNotes"] = noteTable -- Add it to peristent storage
+	ItemListsDB.DBImportID = math.floor(GetTime())
 	return "Done"
 end
 
@@ -695,6 +728,62 @@ function ParseCSVLine (line,sep)
 		end
 	end
 	return res
+end
+
+function ThatsMyBis:OnCommReceived(prefix, serializedMsg, distri, sender)
+	if prefix == "TMBSync" then
+		if sender ~= currentPlayer then 
+			if syncShown then 
+				local valid, command, data = LibAceSerializer:Deserialize(serializedMsg)
+				if valid then
+					if command == "INFO" then
+						ThatsMyBis:Print(data)
+					elseif command == "RTS" then
+						--Someone is asking if we're ready to recieve, check their id against ours.
+						if ItemListsDB.DBImportID == data then
+							ThatsMyBis:SendComm(sender,"INFO", currentPlayer .. " already have this data")
+						else
+							ThatsMyBis:SendComm(sender,"RTR","Please donate if you like this addon") 
+						end
+					elseif command == "RTR" then
+						--Sender is ready to recieve, Transmit data.
+						ThatsMyBis:Print("Sending data to " .. sender)
+						ThatsMyBis:SendComm(sender, "INFO", "You are about to receive TMB data from ".. currentPlayer)
+						ThatsMyBis:SendComm(sender, "DBID", ItemListsDB.DBImportID)
+						ThatsMyBis:SendComm(sender, "TABLES", ItemListsDB.itemNotes)
+
+					elseif command == "TABLES" then
+						ItemListsDB.itemNotes = data
+						ThatsMyBis:Print("ID " .. ItemListsDB.DBImportID .. " have been imported, remember to exit the game gracefully or reload to save it.")
+						ThatsMyBis:SendComm(sender, "INFO", currentPlayer .. " is now on ID " .. ItemListsDB.DBImportID )
+					elseif command == "DBID" then
+						ItemListsDB.DBImportID = data
+						
+					end
+				end
+			else
+				ThatsMyBis:Print(sender .." is trying to send you data, however sync window is not open. Do /tmb sync and have them re-send")
+				ThatsMyBis:SendComm(sender,"INFO", currentPlayer .." does not have sync window open. Try again")
+			end
+		end
+	end
+end
+
+function ThatsMyBis:SendComm(target, command, data )
+    local serialized = nil
+    if data then
+        serialized = LibAceSerializer:Serialize(command, data)
+	end
+	if target == "PARTY" then 
+		ThatsMyBis:SendCommMessage("TMBSync", serialized, target, "BULK")
+	elseif target == "RAID" then 
+		ThatsMyBis:SendCommMessage("TMBSync", serialized, target, "BULK")
+	elseif target == "GUILD" then 
+		ThatsMyBis:SendCommMessage("TMBSync", serialized, target, "BULK")
+	else 
+		ThatsMyBis:SendCommMessage("TMBSync", serialized, "WHISPER", target, "BULK")
+	end
+    
 end
 
 InitFrame()
