@@ -326,6 +326,8 @@ function ThatsMyBis:OnEnable() --Fires when the addon loads, makes sure there is
 	if ItemListsDB.onlyInRaid == nil then ItemListsDB.onlyInRaid = false end
 	if ItemListsDB.onlyRaidMembers == nil then ItemListsDB.onlyRaidMembers = false end
 	if ItemListsDB.DBImportID == nil then ItemListsDB.DBImportID = 0 end
+	if ItemListsDB.showMemberNote == nil then ItemListsDB.showMemberNote = true end
+
 
 	if ItemListsDB.enabled then 
 		statusEnableText = "TMB Tooltips is currently: Enabled"
@@ -354,6 +356,8 @@ function ThatsMyBis:ChatCommands(arg)
 		ThatsMyBis:Print(statusEnableText)
 	elseif arg == "sync" then
 		showSync()
+	elseif arg == "notes" then
+		ItemListsDB.showMemberNote = not ItemListsDB.showMemberNote
 	else 
 		ThatsMyBis:Print("Thats my BIS command arguments\nminimap - toggle minimap icon\ntoogle - enable/disable function\nno argument - open config\nanything else - show this text")
 	end
@@ -452,9 +456,13 @@ local function ModifyItemTooltip( tt ) -- Function for modifying the tooltip
 					if smallestWish == nil then break end
 					local altStatus = ""
 					local linebreaker = " "
+					local noteHolder = ""
+					if ItemListsDB.showMemberNote then 
+						noteHolder = " {"..smallestWish.character_note.."} "
+					end
 					if i % 5 == 0 then linebreaker = "\n" end
 					if ItemListsDB.displayAlts and smallestWish.character_is_alt == 1 then altStatus = "*" end
-					wishlistString = wishlistString .. classColorsTable[ smallestWish.character_class ] .. altStatus .. smallestWish.character_name .. "[" .. smallestWish.sort_order .. "]" .. linebreaker
+					wishlistString = wishlistString .. classColorsTable[ smallestWish.character_class ] .. altStatus .. smallestWish.character_name .. "[" .. smallestWish.sort_order .. "]" .. noteHolder .. linebreaker
 				end
 				local optionalString = ""
 				if totalHiddenWishes-totalReceivedWishes > 0 then 
@@ -522,9 +530,13 @@ local function ModifyItemTooltip( tt ) -- Function for modifying the tooltip
 					if smallestPrio == nil then break end
 					local altStatus = ""
 					local linebreaker = " "
+					local noteHolder = ""
+					if ItemListsDB.showMemberNote then 
+						noteHolder = " {"..smallestWish.character_note.."} "
+					end
 					if i % 5 == 0 then linebreaker = "\n" end
 					if ItemListsDB.displayAlts and smallestPrio.character_is_alt == 1 then altStatus = "*" end
-					prioListString = prioListString .. classColorsTable[ smallestPrio.character_class ] .. altStatus .. smallestPrio.character_name .. "[" .. smallestPrio.sort_order .. "]" .. linebreaker
+					prioListString = prioListString .. classColorsTable[ smallestPrio.character_class ] .. altStatus .. smallestPrio.character_name .. "[" .. smallestPrio.sort_order .. "]" .. noteHolder .. linebreaker
 				end
 	
 				optionalString = ""
@@ -641,6 +653,9 @@ function ParseText(input)
 			tempCharTable.sort_order = tonumber(e.sort_order)
 			tempCharTable.member_name = e.member_name
 			tempCharTable.character_is_alt = tonumber(e.character_is_alt)
+			if ItemListsDB.showMemberNote then
+				tempCharTable.character_note = e.character_note
+			end
 
 			if tempTable ~= nil then tempTable = tempTable.wishlist end -- Look at the wishlist element if it exist then load it
 			if tempTable == nil then --If the loaded item is nil then its the first wish for this item so just save it directly
@@ -656,6 +671,9 @@ function ParseText(input)
 			tempCharTable.sort_order = tonumber(e.sort_order)
 			tempCharTable.member_name = e.member_name
 			tempCharTable.character_is_alt = tonumber(e.character_is_alt)
+			if ItemListsDB.showMemberNote then
+				tempCharTable.character_note = e.character_note
+			end
 
 			if tempTable ~= nil then tempTable = tempTable.priolist end -- Look at the priolist element if it exist then load it
 			if tempTable == nil then --If the loaded item is nil then its the first wish for this item so just save it directly
