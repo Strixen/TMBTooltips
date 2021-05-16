@@ -326,7 +326,7 @@ function ThatsMyBis:OnEnable() --Fires when the addon loads, makes sure there is
 	if ItemListsDB.onlyInRaid == nil then ItemListsDB.onlyInRaid = false end
 	if ItemListsDB.onlyRaidMembers == nil then ItemListsDB.onlyRaidMembers = false end
 	if ItemListsDB.itemNotes.ID == nil then ItemListsDB.itemNotes.ID = 0 end
-	if ItemListsDB.showMemberNote == nil then ItemListsDB.showMemberNote = true end
+	if ItemListsDB.showMemberNotess == nil then ItemListsDB.showMemberNotes = false end
 
 
 	if ItemListsDB.enabled then 
@@ -359,7 +359,7 @@ function ThatsMyBis:ChatCommands(arg)
 	elseif arg == "test" then
 		ThatsMyBis:Print(UnitInRaid("Strixpot"))
 	elseif arg == "notes" then
-		ItemListsDB.showMemberNote = not ItemListsDB.showMemberNote
+		ItemListsDB.showMemberNotes = not ItemListsDB.showMemberNotes
 	else 
 		ThatsMyBis:Print("Thats my BIS command arguments\nminimap - toggle minimap icon\ntoogle - enable/disable function\nno argument - open config\nanything else - show this text")
 	end
@@ -459,7 +459,7 @@ local function ModifyItemTooltip( tt ) -- Function for modifying the tooltip
 					local altStatus = ""
 					local linebreaker = " "
 					local noteHolder = ""
-					if ItemListsDB.showMemberNote then 
+					if ItemListsDB.showMemberNotes then 
 						if smallestWish.character_note ~= nil then 
 							noteHolder = " {"..smallestWish.character_note.."} "
 						end
@@ -535,9 +535,9 @@ local function ModifyItemTooltip( tt ) -- Function for modifying the tooltip
 					local altStatus = ""
 					local linebreaker = " "
 					local noteHolder = ""
-					if ItemListsDB.showMemberNote then 
-						if smallestWish.character_note ~= nil then 
-							noteHolder = " {"..smallestWish.character_note.."} "
+					if ItemListsDB.showMemberNotes then 
+						if smallestPrio.character_note ~= nil then 
+							noteHolder = " {"..smallestPrio.character_note.."} "
 						end
 					end
 					if i % 5 == 0 then linebreaker = "\n" end
@@ -659,7 +659,7 @@ function ParseText(input)
 			tempCharTable.sort_order = tonumber(e.sort_order)
 			tempCharTable.member_name = e.member_name
 			tempCharTable.character_is_alt = tonumber(e.character_is_alt)
-			if ItemListsDB.showMemberNote then
+			if ItemListsDB.showMemberNotes then
 				tempCharTable.character_note = e.character_note
 			end
 
@@ -677,7 +677,7 @@ function ParseText(input)
 			tempCharTable.sort_order = tonumber(e.sort_order)
 			tempCharTable.member_name = e.member_name
 			tempCharTable.character_is_alt = tonumber(e.character_is_alt)
-			if ItemListsDB.showMemberNote then
+			if ItemListsDB.showMemberNotes then
 				tempCharTable.character_note = e.character_note
 			end
 
