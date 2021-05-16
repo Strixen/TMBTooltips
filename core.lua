@@ -59,7 +59,7 @@ OnTooltipShow = function(tooltip) -- Icon tooltip
 	tooltip:AddLine("Right click: Open config")
 	tooltip:AddLine("Hold Alt   : Change tooltip display")
 	tooltip:AddLine("Chat CMD   : /tmb")
-	tooltip:AddLine("Database ID: " .. ItemListsDB.DBImportID)
+	tooltip:AddLine("Database ID: " .. ItemListsDB.itemNotes.ID)
 end,
 })
 
@@ -88,7 +88,7 @@ function showSync()
 	syncFrame:AddChild(SyncButton)
 	SyncButton:SetCallback("OnClick", function (obj, button, down)
 		-- Start sync operation
-		ThatsMyBis:SendComm(targetField:GetText(), "RTS", ItemListsDB.DBImportID)
+		ThatsMyBis:SendComm(targetField:GetText(), "RTS", ItemListsDB.itemNotes.ID)
 		
 	end)
 
@@ -325,7 +325,7 @@ function ThatsMyBis:OnEnable() --Fires when the addon loads, makes sure there is
 	if ItemListsDB.forceReceivedList == nil then ItemListsDB.forceReceivedList = false end
 	if ItemListsDB.onlyInRaid == nil then ItemListsDB.onlyInRaid = false end
 	if ItemListsDB.onlyRaidMembers == nil then ItemListsDB.onlyRaidMembers = false end
-	if ItemListsDB.DBImportID == nil then ItemListsDB.DBImportID = 0 end
+	if ItemListsDB.itemNotes.ID == nil then ItemListsDB.itemNotes.ID = 0 end
 	if ItemListsDB.showMemberNote == nil then ItemListsDB.showMemberNote = true end
 
 
@@ -356,6 +356,8 @@ function ThatsMyBis:ChatCommands(arg)
 		ThatsMyBis:Print(statusEnableText)
 	elseif arg == "sync" then
 		showSync()
+	elseif arg == "test" then
+		ThatsMyBis:Print(UnitInRaid("Strixpot"))
 	elseif arg == "notes" then
 		ItemListsDB.showMemberNote = not ItemListsDB.showMemberNote
 	else 
@@ -415,8 +417,8 @@ local function ModifyItemTooltip( tt ) -- Function for modifying the tooltip
 			local totalHiddenWishes = 0
 			local totalReceivedWishes = 0
 			if itemNotes.wishlist ~= nil then
-				add = false
 				for k,v in pairs(itemNotes.wishlist) do
+					add = false
 					if ItemListsDB.onlyRaidMembers then
 						if UnitInRaid(v.character_name) ~= nil then
 							add = true
@@ -458,7 +460,9 @@ local function ModifyItemTooltip( tt ) -- Function for modifying the tooltip
 					local linebreaker = " "
 					local noteHolder = ""
 					if ItemListsDB.showMemberNote then 
-						noteHolder = " {"..smallestWish.character_note.."} "
+						if smallestWish.character_note ~= nil then 
+							noteHolder = " {"..smallestWish.character_note.."} "
+						end
 					end
 					if i % 5 == 0 then linebreaker = "\n" end
 					if ItemListsDB.displayAlts and smallestWish.character_is_alt == 1 then altStatus = "*" end
@@ -532,7 +536,9 @@ local function ModifyItemTooltip( tt ) -- Function for modifying the tooltip
 					local linebreaker = " "
 					local noteHolder = ""
 					if ItemListsDB.showMemberNote then 
-						noteHolder = " {"..smallestWish.character_note.."} "
+						if smallestWish.character_note ~= nil then 
+							noteHolder = " {"..smallestWish.character_note.."} "
+						end
 					end
 					if i % 5 == 0 then linebreaker = "\n" end
 					if ItemListsDB.displayAlts and smallestPrio.character_is_alt == 1 then altStatus = "*" end
@@ -703,8 +709,9 @@ function ParseText(input)
 			noteTable[tonumber(e.item_id)].rank = e.item_tier_label
  		end
 	end
+	noteTable["ID"] = math.floor(GetTime())
 	ItemListsDB["itemNotes"] = noteTable -- Add it to peristent storage
-	ItemListsDB.DBImportID = math.floor(GetTime())
+
 	return "Done"
 end
 
@@ -758,7 +765,7 @@ function ThatsMyBis:OnCommReceived(prefix, serializedMsg, distri, sender)
 						ThatsMyBis:Print(data)
 					elseif command == "RTS" then
 						--Someone is asking if we're ready to recieve, check their id against ours.
-						if ItemListsDB.DBImportID == data then
+						if ItemListsDB.itemNotes.ID == data then
 							ThatsMyBis:SendComm(sender,"INFO", currentPlayer .. " already have this data")
 						else
 							ThatsMyBis:SendComm(sender,"RTR","Please donate if you like this addon") 
@@ -767,15 +774,15 @@ function ThatsMyBis:OnCommReceived(prefix, serializedMsg, distri, sender)
 						--Sender is ready to recieve, Transmit data.
 						ThatsMyBis:Print("Sending data to " .. sender)
 						ThatsMyBis:SendComm(sender, "INFO", "You are about to receive TMB data from ".. currentPlayer)
-						ThatsMyBis:SendComm(sender, "DBID", ItemListsDB.DBImportID)
+						ThatsMyBis:SendComm(sender, "DBID", ItemListsDB.itemNotes.ID)
 						ThatsMyBis:SendComm(sender, "TABLES", ItemListsDB.itemNotes)
 
 					elseif command == "TABLES" then
 						ItemListsDB.itemNotes = data
-						ThatsMyBis:Print("ID " .. ItemListsDB.DBImportID .. " have been imported, remember to exit the game gracefully or reload to save it.")
-						ThatsMyBis:SendComm(sender, "INFO", currentPlayer .. " is now on ID " .. ItemListsDB.DBImportID )
+						ThatsMyBis:Print("ID " .. ItemListsDB.itemNotes.ID .. " have been imported, remember to exit the game gracefully or reload to save it.")
+						ThatsMyBis:SendComm(sender, "INFO", currentPlayer .. " is now on ID " .. ItemListsDB.itemNotes.ID )
 					elseif command == "DBID" then
-						ItemListsDB.DBImportID = data
+						ItemListsDB.itemNotes.ID = data
 						
 					end
 				end
