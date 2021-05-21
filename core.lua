@@ -1,6 +1,7 @@
 ThatsMyBis = LibStub("AceAddon-3.0"):NewAddon("ThatsMyBis", "AceConsole-3.0", "AceEvent-3.0", "AceComm-3.0")
 local LibAceSerializer = LibStub:GetLibrary("AceSerializer-3.0")
 
+
 local frame = CreateFrame( "Frame" )
 local AceGUI = LibStub("AceGUI-3.0")
 local TMBIcon = LibStub("LibDBIcon-1.0")
@@ -34,6 +35,8 @@ local currentPlayer = UnitName("player")
 
 
 
+
+
 local TMBLDB = LibStub("LibDataBroker-1.1"):NewDataObject("TMBTooltips", {
 type = "data source",
 text = "TMB Tooltips",
@@ -54,7 +57,7 @@ OnClick = function(self,button,down)
 end,
 OnTooltipShow = function(tooltip) -- Icon tooltip
 	tooltip:AddLine("That's My BIS Tooltips")
-	tooltip:AddLine("Version    : 0.5b") -- EDIT TOC and PKMETA
+	tooltip:AddLine("Version    : 0.5c") -- EDIT TOC and PKMETA
 	tooltip:AddLine("Left click : Enable/Disable display")
 	tooltip:AddLine("Right click: Open config")
 	tooltip:AddLine("Hold Alt   : Change tooltip display")
@@ -332,8 +335,72 @@ function ThatsMyBis:OnEnable() --Fires when the addon loads, makes sure there is
 	if ItemListsDB.enabled then 
 		statusEnableText = "TMB Tooltips is currently: Enabled"
 	end
+	--self:RegisterEvent("CHAT_MSG_LOOT", "HandleEvent")
 	
 end
+
+
+
+
+function ThatsMyBis:HandleEvent(self, event, ...)
+	ThatsMyBis:Print(event)
+end
+
+function ThatsMyBis:AddLoot (name,lootName)
+	if name==nil or lootName==nil or not ItemListsDB.TrackLoot then return end
+
+	local ok=false
+	if IsInRaid() then
+		local count=GetNumGroupMembers()
+		if ItemListsDB.TrackSRaid and count<=10 then
+			ok=true
+		elseif ItemListsDB.TrackBRaid and count>=11 then
+			ok=true
+		end
+	elseif IsInGroup() then
+		if ItemListsDB.TrackGroup then
+			ok=true
+		end
+	elseif ItemListsDB.TrackSolo then
+		ok=true
+	end
+
+	if not ok then return end
+
+	local _,PartyNames = RTC.GetPlayerList()
+	local t=time()
+	local class
+	if PartyNames[name] then
+		class=PartyNames[name].class
+	end
+
+	local loot={
+		["name"]=name,
+		["class"]=class,
+		["timestamp"]=t,
+		}
+
+	loot.itemName, loot.itemLink, loot.itemRarity, loot.itemLevel, _, _,
+		_, _, _, loot.itemIcon, loot.itemSellPrice,loot.itemType =GetItemInfo(string.match(lootName,"|H(.+)%["))
+
+		loot.ItemCount=tonumber(string.match(lootitem,"|rx(%d+)") or 1)
+
+
+	if RTC.DB.LootTracker.Rarity[loot.itemRarity] or
+			RTC.DB.LootTracker.ItemType[loot.itemType] or
+				RTC.whitelist[string.match(loot.itemLink,"item:(.-):") or 0] then
+
+		while #RollTrackerClassicLoot>=RTC.DB.LootTracker.NbLoots do
+			tremove(RollTrackerClassicLoot,1)
+		end
+
+		tinsert(RollTrackerClassicLoot,loot)
+		RTC.CSVList_AddItem(loot)
+		RTC.LootList_AddItem(loot)
+		RTC.UpdateLootList()
+	end
+end
+
 
 function ThatsMyBis:ChatCommands(arg)
 	if arg == "" then 
@@ -615,6 +682,7 @@ end ]]
 
 local function InitFrame() --Starts the listener for tooltips
 	GameTooltip:HookScript( "OnTooltipSetItem", ModifyItemTooltip )
+	
 end
 
 function ParseText(input)

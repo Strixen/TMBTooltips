@@ -1,5 +1,5 @@
-## Interface: 11306
-## Version: 0.5b 
+## Interface: 20501
+## Version: 0.5c
 ## Title: TMB Tooltips
 ## Notes: Helper tool for Thats my BIS website.
 ## Author: Strix@Earthshaker
