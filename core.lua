@@ -27,6 +27,8 @@ local rankColorsTable = {
 	N = "\124cFFFF0000"
 	}
 
+local altColor = "\124cFFb8b8b8"
+
 local origChatFrame_OnHyperlinkShow = ChatFrame_OnHyperlinkShow
 
 local statusEnableText = "TMB Tooltips is currently: Disabled"
@@ -57,7 +59,7 @@ OnClick = function(self,button,down)
 end,
 OnTooltipShow = function(tooltip) -- Icon tooltip
 	tooltip:AddLine("That's My BIS Tooltips")
-	tooltip:AddLine("Version    : 0.5c") -- EDIT TOC and PKMETA
+	tooltip:AddLine("Version    : 0.6") -- EDIT TOC and PKMETA
 	tooltip:AddLine("Left click : Enable/Disable display")
 	tooltip:AddLine("Right click: Open config")
 	tooltip:AddLine("Hold Alt   : Change tooltip display")
@@ -128,7 +130,7 @@ function popupConfig()
 	popup.sizer_s:Hide()
 	popup.sizer_e:Hide()
 	popup:SetWidth(600)
-	popup:SetHeight(340)
+	popup:SetHeight(370)
 	local checkboxGroup = AceGUI:Create("SimpleGroup")
 	checkboxGroup:SetRelativeWidth(0.4)
 	local textboxGroup = AceGUI:Create("SimpleGroup")
@@ -193,6 +195,11 @@ function popupConfig()
 	check11:SetValue(ItemListsDB.onlyRaidMembers)
 	checkboxGroup:AddChild(check11)
 
+	local check12 = AceGUI:Create("CheckBox")
+	check12:SetLabel("Show Offspec Tag")
+	check12:SetValue(ItemListsDB.displayOS)
+	checkboxGroup:AddChild(check12)
+
 	-- END OF CHECKBOXES
 
 	local slider1 = AceGUI:Create("Slider")
@@ -233,7 +240,7 @@ function popupConfig()
 	textboxGroup:AddChild(inputfield)
 
 	local parseData = AceGUI:Create("Button")
-	parseData:SetText("Parse")
+	parseData:SetText("Save CSV Data")
 	textboxGroup:AddChild(parseData)
 
 	popup:SetLayout("Flow")
@@ -276,6 +283,10 @@ function popupConfig()
 
 	check11:SetCallback("OnValueChanged", function(obj, evt, val)
 		ItemListsDB.onlyRaidMembers = check11:GetValue()
+	end)
+
+	check12:SetCallback("OnValueChanged", function(obj, evt, val)
+		ItemListsDB.displayOS = check12:GetValue()
 	end)
 
 	slider1:SetCallback("OnMouseUp", function(slid)
@@ -330,6 +341,7 @@ function ThatsMyBis:OnEnable() --Fires when the addon loads, makes sure there is
 	if ItemListsDB.onlyRaidMembers == nil then ItemListsDB.onlyRaidMembers = false end
 	if ItemListsDB.itemNotes.ID == nil then ItemListsDB.itemNotes.ID = 0 end
 	if ItemListsDB.showMemberNotess == nil then ItemListsDB.showMemberNotes = false end
+	if ItemListsDB.displayOS == nil then ItemListsDB.displayOS = true end
 
 
 	if ItemListsDB.enabled then 
@@ -483,6 +495,7 @@ local function ModifyItemTooltip( tt ) -- Function for modifying the tooltip
 			local keyIndex = 1
 			local totalHiddenWishes = 0
 			local totalReceivedWishes = 0
+			
 			if itemNotes.wishlist ~= nil then
 				for k,v in pairs(itemNotes.wishlist) do
 					add = false
@@ -526,14 +539,16 @@ local function ModifyItemTooltip( tt ) -- Function for modifying the tooltip
 					local altStatus = ""
 					local linebreaker = " "
 					local noteHolder = ""
+					local OSText = ""
 					if ItemListsDB.showMemberNotes then 
 						if smallestWish.character_note ~= nil then 
 							noteHolder = " {"..smallestWish.character_note.."} "
 						end
 					end
 					if i % 5 == 0 then linebreaker = "\n" end
-					if ItemListsDB.displayAlts and smallestWish.character_is_alt == 1 then altStatus = "*" end
-					wishlistString = wishlistString .. classColorsTable[ smallestWish.character_class ] .. altStatus .. smallestWish.character_name .. "[" .. smallestWish.sort_order .. "]" .. noteHolder .. linebreaker
+					if ItemListsDB.displayAlts and smallestWish.character_is_alt == 1 then altStatus = altColor end
+					if ItemListsDB.displayOS and smallestWish.is_offspec == 1 then OSText = "-OS" end
+					wishlistString = wishlistString .. classColorsTable[ smallestWish.character_class ] .. smallestWish.character_name .. altStatus .. "[" .. smallestWish.sort_order .. OSText .. "]\124r" .. noteHolder .. linebreaker
 				end
 				local optionalString = ""
 				if totalHiddenWishes-totalReceivedWishes > 0 then 
@@ -602,14 +617,16 @@ local function ModifyItemTooltip( tt ) -- Function for modifying the tooltip
 					local altStatus = ""
 					local linebreaker = " "
 					local noteHolder = ""
+					local OSText = ""
 					if ItemListsDB.showMemberNotes then 
 						if smallestPrio.character_note ~= nil then 
 							noteHolder = " {"..smallestPrio.character_note.."} "
 						end
 					end
 					if i % 5 == 0 then linebreaker = "\n" end
-					if ItemListsDB.displayAlts and smallestPrio.character_is_alt == 1 then altStatus = "*" end
-					prioListString = prioListString .. classColorsTable[ smallestPrio.character_class ] .. altStatus .. smallestPrio.character_name .. "[" .. smallestPrio.sort_order .. "]" .. noteHolder .. linebreaker
+					if ItemListsDB.displayAlts and smallestPrio.character_is_alt == 1 then altStatus = altColor end
+					if ItemListsDB.displayOS and smallestPrio.is_offspec == 1 then OSText = "-OS" end
+					prioListString = prioListString .. classColorsTable[ smallestPrio.character_class ]  .. smallestPrio.character_name .. altStatus .. "[" .. smallestPrio.sort_order .. OSText .. "]\124r" .. noteHolder .. linebreaker
 				end
 	
 				optionalString = ""
@@ -637,7 +654,7 @@ local function ModifyItemTooltip( tt ) -- Function for modifying the tooltip
 				for k,v in pairs(itemReceived) do
 					if k > ItemListsDB.maxNames then break end
 					local altStatus = ""
-					if ItemListsDB.displayAlts and v.character_is_alt == 1 then altStatus = "*" end
+					if ItemListsDB.displayAlts and v.character_is_alt == 1 then altStatus = "[Alt]" end
 					receivedString = receivedString .. altStatus .. classColorsTable[ v.character_class ] .. v.character_name .. " "
 				end
 				tt:AddLine( receivedString )
@@ -653,7 +670,7 @@ local function ModifyItemTooltip( tt ) -- Function for modifying the tooltip
 			for k,v in pairs(itemReceived) do
 				if k > ItemListsDB.maxNames then break end
 				local altStatus = ""
-				if ItemListsDB.displayAlts and v.character_is_alt == 1 then altStatus = "*" end
+				if ItemListsDB.displayAlts and v.character_is_alt == 1 then altStatus = "[Alt]" end
 				receivedString = receivedString .. altStatus .. classColorsTable[ v.character_class ] .. v.character_name .. " "
 			end
 			tt:AddLine( receivedString )
@@ -695,7 +712,7 @@ function ParseText(input)
 	for line in input:gmatch("([^\n]*)\n?") do -- Extract the lines into seperate entries in an array.
 		table.insert(parsedLines, line..",")
 	end
-	if (parsedLines[1] ~= header) then return "Wrong Header" end -- Validate the header
+	if (parsedLines[1] ~= header) then return "Wrong CSV header" end -- Validate the header
 	
 	local headerData = {}
 	for lineKey,line in pairs(parsedLines) do
@@ -713,74 +730,86 @@ function ParseText(input)
 	end
 	table.remove(parsedEntries) -- Pop of the malformed last entry.
 	local noteTable = {}
+	
 
 	for k,e in pairs(parsedEntries) do
 		local tempTable = {}
 		local tempCharTable = {}
+		local checkToken = {}
+		local currentItemID = nil
+		if e.character_inactive_at == "" then
+			currentItemID = tonumber(e.item_id)
+			checkToken = tokens[currentItemID]  
+			if checkToken ~= nil then currentItemID = checkToken end
+			tempTable = noteTable[ currentItemID ] --Try and load the item element
+			if tempTable == nil then noteTable[ currentItemID ] = {} end -- Make an array because this is the first time the item is seen
 
-		tempTable = noteTable[ tonumber(e.item_id) ] --Try and load the item element
-		if tempTable == nil then noteTable[ tonumber(e.item_id) ] = {} end -- Make an array because this is the first time the item is seen
+			if e.type == "wishlist" then
+				tempCharTable.character_class = e.character_class
+				tempCharTable.character_name = e.character_name
+				tempCharTable.sort_order = tonumber(e.sort_order)
+				tempCharTable.member_name = e.member_name
+				tempCharTable.character_is_alt = tonumber(e.character_is_alt)
+				tempCharTable.is_offspec = tonumber(e.is_offspec)
+				if ItemListsDB.showMemberNotes then
+					tempCharTable.character_note = e.character_note
+				end
 
-		if e.type == "wishlist" then
-			tempCharTable.character_class = e.character_class
-			tempCharTable.character_name = e.character_name
-			tempCharTable.sort_order = tonumber(e.sort_order)
-			tempCharTable.member_name = e.member_name
-			tempCharTable.character_is_alt = tonumber(e.character_is_alt)
-			if ItemListsDB.showMemberNotes then
-				tempCharTable.character_note = e.character_note
+				if tempTable ~= nil then tempTable = tempTable.wishlist end -- Look at the wishlist element if it exist then load it
+				if tempTable == nil then --If the loaded item is nil then its the first wish for this item so just save it directly
+					tempTable = {}
+					table.insert(tempTable,tempCharTable)
+				else -- Else insert it into the old one before saving.
+					table.insert(tempTable,tempCharTable)
+				end
+				noteTable[currentItemID].wishlist = tempTable
+			elseif e.type == "prio" then
+				tempCharTable.character_class = e.character_class
+				tempCharTable.character_name = e.character_name
+				tempCharTable.sort_order = tonumber(e.sort_order)
+				tempCharTable.member_name = e.member_name
+				tempCharTable.character_is_alt = tonumber(e.character_is_alt)
+				tempCharTable.is_offspec = tonumber(e.is_offspec)
+				if ItemListsDB.showMemberNotes then
+					tempCharTable.character_note = e.character_note
+				end
+
+				if tempTable ~= nil then tempTable = tempTable.priolist end -- Look at the priolist element if it exist then load it
+				if tempTable == nil then --If the loaded item is nil then its the first wish for this item so just save it directly
+					tempTable = {}
+					table.insert(tempTable,tempCharTable)
+				else -- Else insert it into the old one before saving.
+					table.insert(tempTable,tempCharTable)
+				end
+				noteTable[currentItemID].priolist = tempTable
+			elseif e.type == "received" then 
+				tempCharTable.character_class = e.character_class
+				tempCharTable.character_name = e.character_name
+				tempCharTable.member_name = e.member_name
+				tempCharTable.character_is_alt = tonumber(e.character_is_alt)
+				tempCharTable.is_offspec = tonumber(e.is_offspec)
+
+				if tempTable ~= nil then tempTable = tempTable.received end -- Look at the recieved element if it exist then load it
+				if tempTable == nil then --If the loaded item is nil then its the first wish for this item so just save it directly
+					tempTable = {}
+					table.insert(tempTable,tempCharTable)
+				else -- Else insert it into the old one before saving.
+					table.insert(tempTable,tempCharTable)
+				end
+				noteTable[currentItemID].received = tempTable
+			elseif e.type == "item_note" then 
+				noteTable[currentItemID].prioNote = e.item_prio_note
+				noteTable[currentItemID].guildNote = e.item_note
+				noteTable[currentItemID].rank = e.item_tier_label
 			end
 
-			if tempTable ~= nil then tempTable = tempTable.wishlist end -- Look at the wishlist element if it exist then load it
-			if tempTable == nil then --If the loaded item is nil then its the first wish for this item so just save it directly
-				tempTable = {}
-				table.insert(tempTable,tempCharTable)
-			else -- Else insert it into the old one before saving.
-				table.insert(tempTable,tempCharTable)
-			end
-			noteTable[tonumber(e.item_id)].wishlist = tempTable
-		elseif e.type == "prio" then
-			tempCharTable.character_class = e.character_class
-			tempCharTable.character_name = e.character_name
-			tempCharTable.sort_order = tonumber(e.sort_order)
-			tempCharTable.member_name = e.member_name
-			tempCharTable.character_is_alt = tonumber(e.character_is_alt)
-			if ItemListsDB.showMemberNotes then
-				tempCharTable.character_note = e.character_note
-			end
-
-			if tempTable ~= nil then tempTable = tempTable.priolist end -- Look at the priolist element if it exist then load it
-			if tempTable == nil then --If the loaded item is nil then its the first wish for this item so just save it directly
-				tempTable = {}
-				table.insert(tempTable,tempCharTable)
-			else -- Else insert it into the old one before saving.
-				table.insert(tempTable,tempCharTable)
-			end
-			noteTable[tonumber(e.item_id)].priolist = tempTable
-		elseif e.type == "received" then 
-			tempCharTable.character_class = e.character_class
-			tempCharTable.character_name = e.character_name
-			tempCharTable.member_name = e.member_name
-			tempCharTable.character_is_alt = tonumber(e.character_is_alt)
-
-			if tempTable ~= nil then tempTable = tempTable.received end -- Look at the recieved element if it exist then load it
-			if tempTable == nil then --If the loaded item is nil then its the first wish for this item so just save it directly
-				tempTable = {}
-				table.insert(tempTable,tempCharTable)
-			else -- Else insert it into the old one before saving.
-				table.insert(tempTable,tempCharTable)
-			end
-			noteTable[tonumber(e.item_id)].received = tempTable
-		elseif e.type == "item_note" then 
-			noteTable[tonumber(e.item_id)].prioNote = e.item_prio_note
-			noteTable[tonumber(e.item_id)].guildNote = e.item_note
-			noteTable[tonumber(e.item_id)].rank = e.item_tier_label
- 		end
+		end
+		 -- 
 	end
 	noteTable["ID"] = math.floor(GetTime())
 	ItemListsDB["itemNotes"] = noteTable -- Add it to peristent storage
 
-	return "Done"
+	return "Success, data saved"
 end
 
 function ParseCSVLine (line,sep) 
@@ -878,5 +907,501 @@ function ThatsMyBis:SendComm(target, command, data )
 	end
     
 end
+
+tokens = {
+	[18406]=18422,
+	[18403]=18422,
+	[18404]=18422,
+	[19383]=19002,
+	[19366]=19002,
+	[19384]=19002,
+	[19827]=19716,
+	[19846]=19716,
+	[19833]=19716,
+	[19830]=19717,
+	[19836]=19717,
+	[19824]=19717,
+	[19843]=19718,
+	[19848]=19718,
+	[19840]=19718,
+	[19829]=19719,
+	[19835]=19719,
+	[19823]=19719,
+	[19842]=19720,
+	[19849]=19720,
+	[19839]=19720,
+	[19826]=19721,
+	[19845]=19721,
+	[19832]=19721,
+	[19828]=19722,
+	[19825]=19722,
+	[19838]=19722,
+	[20033]=19723,
+	[20034]=19723,
+	[19822]=19723,
+	[19841]=19724,
+	[19834]=19724,
+	[19831]=19724,
+	[19948]=19802,
+	[19950]=19802,
+	[19949]=19802,
+	[21408]=20884,
+	[21414]=20884,
+	[21396]=20884,
+	[21399]=20884,
+	[21393]=20884,
+	[21406]=20885,
+	[21394]=20885,
+	[21415]=20885,
+	[21412]=20885,
+	[21395]=20886,
+	[21404]=20886,
+	[21398]=20886,
+	[21401]=20886,
+	[21392]=20886,
+	[21405]=20888,
+	[21411]=20888,
+	[21417]=20888,
+	[21402]=20888,
+	[21397]=20889,
+	[21400]=20889,
+	[21403]=20889,
+	[21409]=20889,
+	[21418]=20889,
+	[21413]=20890,
+	[21410]=20890,
+	[21416]=20890,
+	[21407]=20890,
+	[21329]=20926,
+	[21337]=20926,
+	[21347]=20926,
+	[21348]=20926,
+	[21332]=20927,
+	[21362]=20927,
+	[21346]=20927,
+	[21352]=20927,
+	[21333]=20928,
+	[21330]=20928,
+	[21359]=20928,
+	[21361]=20928,
+	[21349]=20928,
+	[21350]=20928,
+	[21365]=20928,
+	[21367]=20928,
+	[21389]=20929,
+	[21331]=20929,
+	[21364]=20929,
+	[21374]=20929,
+	[21370]=20929,
+	[21387]=20930,
+	[21360]=20930,
+	[21353]=20930,
+	[21372]=20930,
+	[21366]=20930,
+	[21390]=20931,
+	[21336]=20931,
+	[21356]=20931,
+	[21375]=20931,
+	[21368]=20931,
+	[21388]=20932,
+	[21391]=20932,
+	[21338]=20932,
+	[21335]=20932,
+	[21344]=20932,
+	[21345]=20932,
+	[21355]=20932,
+	[21354]=20932,
+	[21373]=20932,
+	[21376]=20932,
+	[21334]=20933,
+	[21343]=20933,
+	[21357]=20933,
+	[21351]=20933,
+	[21504]=21220,
+	[21507]=21220,
+	[21505]=21220,
+	[21506]=21220,
+	[21712]=21221,
+	[21710]=21221,
+	[21709]=21221,
+	[22477]=22352,
+	[22417]=22352,
+	[22478]=22353,
+	[22418]=22353,
+	[22479]=22354,
+	[22419]=22354,
+	[22483]=22355,
+	[22423]=22355,
+	[22482]=22356,
+	[22422]=22356,
+	[22481]=22357,
+	[22421]=22357,
+	[22480]=22358,
+	[22420]=22358,
+	[22437]=22359,
+	[22489]=22359,
+	[22465]=22359,
+	[22427]=22359,
+	[22438]=22360,
+	[22490]=22360,
+	[22466]=22360,
+	[22428]=22360,
+	[22439]=22361,
+	[22491]=22361,
+	[22467]=22361,
+	[22429]=22361,
+	[22443]=22362,
+	[22495]=22362,
+	[22471]=22362,
+	[22424]=22362,
+	[22442]=22363,
+	[22494]=22363,
+	[22470]=22363,
+	[22431]=22363,
+	[22441]=22364,
+	[22493]=22364,
+	[22469]=22364,
+	[22426]=22364,
+	[22440]=22365,
+	[22492]=22365,
+	[22468]=22365,
+	[22430]=22365,
+	[22497]=22366,
+	[22513]=22366,
+	[22505]=22366,
+	[22514]=22367,
+	[22498]=22367,
+	[22506]=22367,
+	[22499]=22368,
+	[22507]=22368,
+	[22515]=22368,
+	[22519]=22369,
+	[22503]=22369,
+	[22511]=22369,
+	[22518]=22370,
+	[22502]=22370,
+	[22510]=22370,
+	[22501]=22371,
+	[22517]=22371,
+	[22509]=22371,
+	[22500]=22372,
+	[22508]=22373,
+	[22516]=22374,
+	[23206]=22520,
+	[23207]=22520,
+	[29096]=29753,
+	[29087]=29753,
+	[29091]=29753,
+	[29050]=29753,
+	[29056]=29753,
+	[29012]=29753,
+	[29019]=29753,
+	[29066]=29754,
+	[29071]=29754,
+	[29062]=29754,
+	[29045]=29754,
+	[29038]=29754,
+	[29029]=29754,
+	[29033]=29754,
+	[29082]=29755,
+	[29077]=29755,
+	[28964]=29755,
+	[29085]=29756,
+	[29080]=29756,
+	[28968]=29756,
+	[29067]=29757,
+	[29072]=29757,
+	[29065]=29757,
+	[29048]=29757,
+	[29039]=29757,
+	[29032]=29757,
+	[29034]=29757,
+	[29097]=29758,
+	[29090]=29758,
+	[29092]=29758,
+	[29055]=29758,
+	[29057]=29758,
+	[29020]=29758,
+	[29017]=29758,
+	[29081]=29759,
+	[29076]=29759,
+	[28963]=29759,
+	[29068]=29760,
+	[29073]=29760,
+	[29061]=29760,
+	[29044]=29760,
+	[29035]=29760,
+	[29028]=29760,
+	[29040]=29760,
+	[29098]=29761,
+	[29086]=29761,
+	[29093]=29761,
+	[29049]=29761,
+	[29058]=29761,
+	[29011]=29761,
+	[29021]=29761,
+	[29084]=29762,
+	[29079]=29762,
+	[28967]=29762,
+	[29070]=29763,
+	[29075]=29763,
+	[29064]=29763,
+	[29047]=29763,
+	[29043]=29763,
+	[29031]=29763,
+	[29037]=29763,
+	[29100]=29764,
+	[29089]=29764,
+	[29095]=29764,
+	[29054]=29764,
+	[29060]=29764,
+	[29016]=29764,
+	[29023]=29764,
+	[29083]=29765,
+	[29078]=29765,
+	[28966]=29765,
+	[29069]=29766,
+	[29074]=29766,
+	[29063]=29766,
+	[29046]=29766,
+	[29036]=29766,
+	[29030]=29766,
+	[29042]=29766,
+	[29099]=29767,
+	[29088]=29767,
+	[29094]=29767,
+	[29059]=29767,
+	[29053]=29767,
+	[29015]=29767,
+	[29022]=29767,
+	[30123]=30236,
+	[30129]=30236,
+	[30134]=30236,
+	[30144]=30236,
+	[30185]=30236,
+	[30164]=30236,
+	[30169]=30236,
+	[30222]=30237,
+	[30216]=30237,
+	[30231]=30237,
+	[30150]=30237,
+	[30159]=30237,
+	[30113]=30237,
+	[30118]=30237,
+	[30139]=30238,
+	[30196]=30238,
+	[30214]=30238,
+	[30124]=30239,
+	[30130]=30239,
+	[30135]=30239,
+	[30145]=30239,
+	[30189]=30239,
+	[30165]=30239,
+	[30170]=30239,
+	[30223]=30240,
+	[30217]=30240,
+	[30232]=30240,
+	[30151]=30240,
+	[30160]=30240,
+	[30114]=30240,
+	[30119]=30240,
+	[30140]=30241,
+	[30205]=30241,
+	[30211]=30241,
+	[30125]=30242,
+	[30131]=30242,
+	[30136]=30242,
+	[30146]=30242,
+	[30190]=30242,
+	[30166]=30242,
+	[30171]=30242,
+	[30233]=30243,
+	[30219]=30243,
+	[30228]=30243,
+	[30152]=30243,
+	[30161]=30243,
+	[30115]=30243,
+	[30120]=30243,
+	[30141]=30244,
+	[30206]=30244,
+	[30212]=30244,
+	[30126]=30245,
+	[30132]=30245,
+	[30137]=30245,
+	[30148]=30245,
+	[30192]=30245,
+	[30167]=30245,
+	[30172]=30245,
+	[30229]=30246,
+	[30220]=30246,
+	[30234]=30246,
+	[30153]=30246,
+	[30162]=30246,
+	[30116]=30246,
+	[30121]=30246,
+	[30142]=30247,
+	[30207]=30247,
+	[30213]=30247,
+	[30127]=30248,
+	[30133]=30248,
+	[30138]=30248,
+	[30149]=30248,
+	[30194]=30248,
+	[30168]=30248,
+	[30173]=30248,
+	[30230]=30249,
+	[30221]=30249,
+	[30235]=30249,
+	[30154]=30249,
+	[30163]=30249,
+	[30117]=30249,
+	[30122]=30249,
+	[30143]=30250,
+	[30210]=30250,
+	[30215]=30250,
+	[30991]=31089,
+	[30990]=31089,
+	[30992]=31089,
+	[31065]=31089,
+	[31066]=31089,
+	[31052]=31089,
+	[31042]=31090,
+	[31041]=31090,
+	[31043]=31090,
+	[31057]=31090,
+	[31028]=31090,
+	[31004]=31091,
+	[31018]=31091,
+	[31016]=31091,
+	[31017]=31091,
+	[30976]=31091,
+	[30975]=31091,
+	[30985]=31092,
+	[30982]=31092,
+	[30983]=31092,
+	[31061]=31092,
+	[31060]=31092,
+	[31050]=31092,
+	[31034]=31093,
+	[31032]=31093,
+	[31035]=31093,
+	[31055]=31093,
+	[31026]=31093,
+	[31001]=31094,
+	[31011]=31094,
+	[31007]=31094,
+	[31008]=31094,
+	[30970]=31094,
+	[30969]=31094,
+	[31003]=31095,
+	[31015]=31095,
+	[31012]=31095,
+	[31014]=31095,
+	[30974]=31095,
+	[30972]=31095,
+	[31039]=31096,
+	[31037]=31096,
+	[31040]=31096,
+	[31056]=31096,
+	[31027]=31096,
+	[30987]=31097,
+	[30989]=31097,
+	[30988]=31097,
+	[31064]=31097,
+	[31063]=31097,
+	[31051]=31097,
+	[30995]=31098,
+	[30993]=31098,
+	[30994]=31098,
+	[31067]=31098,
+	[31068]=31098,
+	[31053]=31098,
+	[31044]=31099,
+	[31045]=31099,
+	[31046]=31099,
+	[31058]=31099,
+	[31029]=31099,
+	[31005]=31100,
+	[31021]=31100,
+	[31019]=31100,
+	[31020]=31100,
+	[30978]=31100,
+	[30977]=31100,
+	[30998]=31101,
+	[30997]=31101,
+	[30996]=31101,
+	[31070]=31101,
+	[31069]=31101,
+	[31054]=31101,
+	[31048]=31102,
+	[31047]=31102,
+	[31049]=31102,
+	[31059]=31102,
+	[31030]=31102,
+	[31006]=31103,
+	[31024]=31103,
+	[31022]=31103,
+	[31023]=31103,
+	[30980]=31103,
+	[30979]=31103,
+	[28792]=32385,
+	[28793]=32385,
+	[28790]=32385,
+	[28791]=32385,
+	[30015]=32405,
+	[30007]=32405,
+	[30018]=32405,
+	[30017]=32405,
+	[34433]=34848,
+	[34431]=34848,
+	[34432]=34848,
+	[34434]=34848,
+	[34435]=34848,
+	[34436]=34848,
+	[34443]=34851,
+	[34437]=34851,
+	[34438]=34851,
+	[34439]=34851,
+	[34442]=34851,
+	[34441]=34851,
+	[34444]=34852,
+	[34445]=34852,
+	[34446]=34852,
+	[34447]=34852,
+	[34448]=34852,
+	[34488]=34853,
+	[34485]=34853,
+	[34487]=34853,
+	[34528]=34853,
+	[34527]=34853,
+	[34541]=34853,
+	[34549]=34854,
+	[34545]=34854,
+	[34543]=34854,
+	[34542]=34854,
+	[34547]=34854,
+	[34546]=34854,
+	[34556]=34855,
+	[34554]=34855,
+	[34555]=34855,
+	[34557]=34855,
+	[34558]=34855,
+	[34560]=34856,
+	[34561]=34856,
+	[34559]=34856,
+	[34563]=34856,
+	[34562]=34856,
+	[34564]=34856,
+	[34570]=34857,
+	[34566]=34857,
+	[34565]=34857,
+	[34567]=34857,
+	[34568]=34857,
+	[34569]=34857,
+	[34573]=34858,
+	[34571]=34858,
+	[34572]=34858,
+	[34574]=34858,
+	[34575]=34858}
 
 InitFrame()
