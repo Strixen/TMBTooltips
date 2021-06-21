@@ -1,5 +1,6 @@
 ThatsMyBis = LibStub("AceAddon-3.0"):NewAddon("ThatsMyBis", "AceConsole-3.0", "AceEvent-3.0", "AceComm-3.0")
 local LibAceSerializer = LibStub:GetLibrary("AceSerializer-3.0")
+local libc = LibStub:GetLibrary("LibCompress")
 
 
 local frame = CreateFrame( "Frame" )
@@ -7,16 +8,27 @@ local AceGUI = LibStub("AceGUI-3.0")
 local TMBIcon = LibStub("LibDBIcon-1.0")
 
 local classColorsTable = {
-	Warrior = "\124cFFC79C6E",
-	Paladin = "\124cFFF58CBA",
-	Shaman = "\124cFF0070DE",
-	Hunter = "\124cFFABD473",
-	Druid = "\124cFFFF7D0A",
-	Rogue = "\124cFFFFF569",
-	Priest = "\124cFFFFFFFF",
-	Warlock = "\124cFF9482C9",
-	Mage = "\124cFF69CCF0"
+	"\124cFFC79C6E",
+	"\124cFFF58CBA",
+	"\124cFF0070DE",
+	"\124cFFABD473",
+	"\124cFFFF7D0A",
+	"\124cFFFFF569",
+	"\124cFFFFFFFF",
+	"\124cFF9482C9",
+	"\124cFF69CCF0"
 	}
+	local classToID = {
+		Warrior = 1,
+		Paladin = 2,
+		Shaman = 3,
+		Hunter = 4,
+		Druid = 5,
+		Rogue = 6,
+		Priest = 7,
+		Warlock = 8,
+		Mage = 9
+		}
 local rankColorsTable = {
 	S = "\124cFF02F3FF",
 	A = "\124cFF20FF00",
@@ -80,9 +92,10 @@ function showSync()
 	syncFrame.sizer_se:Hide()
 	syncFrame.sizer_s:Hide()
 	syncFrame.sizer_e:Hide()
-	syncFrame:SetWidth(300)
-	syncFrame:SetHeight(200)
+	syncFrame:SetWidth(270)
+	syncFrame:SetHeight(160)
 	syncFrame:SetLayout("Flow")
+	syncFrame:SetStatusText("Ready")
 	local targetField = AceGUI:Create("EditBox")
 	targetField:SetLabel("Who do you want to send data to?")
 	targetField:DisableButton(true)
@@ -107,6 +120,32 @@ function showSync()
 	function(widget)
 	  AceGUI:Release(widget)
 	  syncShown = false
+	end
+   )
+end
+
+local function newConfigPanel()
+	if configShown then
+		return
+	end
+
+	configShown = true
+
+	syncFrame = AceGUI:Create("Frame")
+	syncFrame:SetTitle("Thats my bis Tooltips")
+	syncFrame.sizer_se:Hide()
+	syncFrame.sizer_s:Hide()
+	syncFrame.sizer_e:Hide()
+	syncFrame:SetWidth(600)
+	syncFrame:SetHeight(500)
+
+
+
+
+	syncFrame:SetCallback("OnClose", 
+	function(widget)
+	  AceGUI:Release(widget)
+	  configShown = false
 	end
    )
 end
@@ -209,7 +248,7 @@ function popupConfig()
 	slider1:SetRelativeWidth(1)
 	textboxGroup:AddChild(slider1)
 
-	local inputfield = AceGUI:Create("MultiLineEditBox")
+	inputfield = AceGUI:Create("MultiLineEditBox")
 	inputfield:SetLabel("Paste CSV here")
 	inputfield:SetNumLines(12)
 	inputfield:SetWidth(320)
@@ -342,77 +381,50 @@ function ThatsMyBis:OnEnable() --Fires when the addon loads, makes sure there is
 	if ItemListsDB.itemNotes.ID == nil then ItemListsDB.itemNotes.ID = 0 end
 	if ItemListsDB.showMemberNotess == nil then ItemListsDB.showMemberNotes = false end
 	if ItemListsDB.displayOS == nil then ItemListsDB.displayOS = true end
+	if ItemListsDB.lootTableTest == nil then ItemListsDB.lootTableTest = {} end
 
 
 	if ItemListsDB.enabled then 
 		statusEnableText = "TMB Tooltips is currently: Enabled"
 	end
-	--self:RegisterEvent("CHAT_MSG_LOOT", "HandleEvent")
+	self:RegisterEvent("CHAT_MSG_LOOT", "HandleEvent")
 	
 end
 
+local function exportLootTable()
+	local exportString = "dateTime,player,itemID,itemName\n"
+	for k,v in pairs(ItemListsDB.lootTableTest) do
+		exportString = exportString .. k .. ","
+		for garbage,data in pairs(v) do
+			exportString = exportString .. data .. ","
+		end
+		exportString = exportString:sub(1, #exportString - 1) .. "\n"
+
+	end
+	inputfield:SetText(exportString)
+	inputfield:SetFocus()
+	inputfield:HighlightText()
+end
 
 
 
 function ThatsMyBis:HandleEvent(self, event, ...)
-	ThatsMyBis:Print(event)
-end
+	local tempLootEntry = {}
+	--local zone = GetRealZoneText();
+	local itemLink = string.match(event,"|%x+|Hitem:.-|h.-|h|r")
+	local itemId, itemName, quality = ParseItemIdOrLink(itemLink)
+	local LootersName = string.match(event,"%u%l+")
+	
 
-function ThatsMyBis:AddLoot (name,lootName)
-	if name==nil or lootName==nil or not ItemListsDB.TrackLoot then return end
-
-	local ok=false
-	if IsInRaid() then
-		local count=GetNumGroupMembers()
-		if ItemListsDB.TrackSRaid and count<=10 then
-			ok=true
-		elseif ItemListsDB.TrackBRaid and count>=11 then
-			ok=true
-		end
-	elseif IsInGroup() then
-		if ItemListsDB.TrackGroup then
-			ok=true
-		end
-	elseif ItemListsDB.TrackSolo then
-		ok=true
+	if (LootersName == "You") then
+		LootersName = UnitName("player");
 	end
-
-	if not ok then return end
-
-	local _,PartyNames = RTC.GetPlayerList()
-	local t=time()
-	local class
-	if PartyNames[name] then
-		class=PartyNames[name].class
-	end
-
-	local loot={
-		["name"]=name,
-		["class"]=class,
-		["timestamp"]=t,
-		}
-
-	loot.itemName, loot.itemLink, loot.itemRarity, loot.itemLevel, _, _,
-		_, _, _, loot.itemIcon, loot.itemSellPrice,loot.itemType =GetItemInfo(string.match(lootName,"|H(.+)%["))
-
-		loot.ItemCount=tonumber(string.match(lootitem,"|rx(%d+)") or 1)
-
-
-	if RTC.DB.LootTracker.Rarity[loot.itemRarity] or
-			RTC.DB.LootTracker.ItemType[loot.itemType] or
-				RTC.whitelist[string.match(loot.itemLink,"item:(.-):") or 0] then
-
-		while #RollTrackerClassicLoot>=RTC.DB.LootTracker.NbLoots do
-			tremove(RollTrackerClassicLoot,1)
-		end
-
-		tinsert(RollTrackerClassicLoot,loot)
-		RTC.CSVList_AddItem(loot)
-		RTC.LootList_AddItem(loot)
-		RTC.UpdateLootList()
+	tempLootEntry = {LootersName, itemId, itemName}
+	if quality and quality >= 6 then
+		ItemListsDB.lootTableTest[GetServerTime()] = tempLootEntry
+		ThatsMyBis:Print(GetServerTime(), LootersName, itemId, itemName)
 	end
 end
-
 
 function ThatsMyBis:ChatCommands(arg)
 	if arg == "" then 
@@ -436,11 +448,11 @@ function ThatsMyBis:ChatCommands(arg)
 	elseif arg == "sync" then
 		showSync()
 	elseif arg == "test" then
-		ThatsMyBis:Print(UnitInRaid("Strixpot"))
+		exportLootTable()
 	elseif arg == "notes" then
 		ItemListsDB.showMemberNotes = not ItemListsDB.showMemberNotes
 	else 
-		ThatsMyBis:Print("Thats my BIS command arguments\nminimap - toggle minimap icon\ntoogle - enable/disable function\nno argument - open config\nanything else - show this text")
+		ThatsMyBis:Print("Thats my BIS command arguments\nminimap - toggle minimap icon\ntoggle - enable/disable function\nno argument - open config\nanything else - show this text")
 	end
 
 end 
@@ -474,6 +486,14 @@ local function ModifyItemTooltip( tt ) -- Function for modifying the tooltip
 				tt:AddLine("Prio Notes:")
 				tt:AddLine("\124cFFFFFFFF" .. itemPrioNotes .. rankData)
 			end
+		end
+		-- %%%%%%%%%%%%%%%%% PRIO RANK 
+		-- Edge case where someone might have prio notes disabled but rank enabled.
+		
+		if not ItemListsDB.displayPrioNote and ItemListsDB.displayRank then
+			local rankData = ""
+				if (itemNotes.rank ~= "") then rankData = "\124cFFD97025Rank: " .. rankColorsTable[itemNotes.rank]..itemNotes.rank end
+				tt:AddLine(rankData)
 		end
 
 		-- %%%%%%%%%%%%%%%%% GUILD NOTES
@@ -745,10 +765,9 @@ function ParseText(input)
 			if tempTable == nil then noteTable[ currentItemID ] = {} end -- Make an array because this is the first time the item is seen
 
 			if e.type == "wishlist" then
-				tempCharTable.character_class = e.character_class
+				tempCharTable.character_class = classToID[e.character_class]
 				tempCharTable.character_name = e.character_name
 				tempCharTable.sort_order = tonumber(e.sort_order)
-				tempCharTable.member_name = e.member_name
 				tempCharTable.character_is_alt = tonumber(e.character_is_alt)
 				tempCharTable.is_offspec = tonumber(e.is_offspec)
 				if ItemListsDB.showMemberNotes then
@@ -764,10 +783,9 @@ function ParseText(input)
 				end
 				noteTable[currentItemID].wishlist = tempTable
 			elseif e.type == "prio" then
-				tempCharTable.character_class = e.character_class
+				tempCharTable.character_class = classToID[e.character_class]
 				tempCharTable.character_name = e.character_name
 				tempCharTable.sort_order = tonumber(e.sort_order)
-				tempCharTable.member_name = e.member_name
 				tempCharTable.character_is_alt = tonumber(e.character_is_alt)
 				tempCharTable.is_offspec = tonumber(e.is_offspec)
 				if ItemListsDB.showMemberNotes then
@@ -783,9 +801,8 @@ function ParseText(input)
 				end
 				noteTable[currentItemID].priolist = tempTable
 			elseif e.type == "received" then 
-				tempCharTable.character_class = e.character_class
+				tempCharTable.character_class = classToID[e.character_class]
 				tempCharTable.character_name = e.character_name
-				tempCharTable.member_name = e.member_name
 				tempCharTable.character_is_alt = tonumber(e.character_is_alt)
 				tempCharTable.is_offspec = tonumber(e.is_offspec)
 
@@ -806,11 +823,17 @@ function ParseText(input)
 		end
 		 -- 
 	end
-	noteTable["ID"] = math.floor(GetTime())
+	local checksum = ""
+	local serializedTable = LibAceSerializer:Serialize(noteTable)
+	checksum = libc:fcs16init()
+	checksum = libc:fcs16update(checksum,serializedTable)
+	checksum = libc:fcs16final(checksum)
+	ThatsMyBis:Print("Added data: "..checksum)
+	noteTable["ID"] = checksum
 	ItemListsDB["itemNotes"] = noteTable -- Add it to peristent storage
-
+	
 	return "Success, data saved"
-end
+	end
 
 function ParseCSVLine (line,sep) 
 	local res = {}
@@ -856,10 +879,12 @@ function ThatsMyBis:OnCommReceived(prefix, serializedMsg, distri, sender)
 	if prefix == "TMBSync" then
 		if sender ~= currentPlayer then 
 			if syncShown then 
-				local valid, command, data = LibAceSerializer:Deserialize(serializedMsg)
+				local decompress = libc:Decompress(serializedMsg)
+				local valid, command, data = LibAceSerializer:Deserialize(decompress)
 				if valid then
 					if command == "INFO" then
 						ThatsMyBis:Print(data)
+						syncFrame:SetStatusText("Ready")
 					elseif command == "RTS" then
 						--Someone is asking if we're ready to recieve, check their id against ours.
 						if ItemListsDB.itemNotes.ID == data then
@@ -882,6 +907,8 @@ function ThatsMyBis:OnCommReceived(prefix, serializedMsg, distri, sender)
 						ItemListsDB.itemNotes.ID = data
 						
 					end
+				else
+					ThatsMyBis:Print("Received invalid data, make sure you're all running the latest version.")
 				end
 			else
 				ThatsMyBis:Print(sender .." is trying to send you data, however sync window is not open. Do /tmb sync and have them re-send")
@@ -895,20 +922,62 @@ function ThatsMyBis:SendComm(target, command, data )
     local serialized = nil
     if data then
         serialized = LibAceSerializer:Serialize(command, data)
+		compressed = libc:Compress(serialized)
 	end
 	if target == "PARTY" then 
-		ThatsMyBis:SendCommMessage("TMBSync", serialized, target, "BULK")
+		ThatsMyBis:SendCommMessage("TMBSync", compressed, target, "BULK",ThatsMyBis.commCallback)
 	elseif target == "RAID" then 
-		ThatsMyBis:SendCommMessage("TMBSync", serialized, target, "BULK")
+		ThatsMyBis:SendCommMessage("TMBSync", compressed, target, "BULK",ThatsMyBis.commCallback)
 	elseif target == "GUILD" then 
-		ThatsMyBis:SendCommMessage("TMBSync", serialized, target, "BULK")
+		ThatsMyBis:SendCommMessage("TMBSync", compressed, target, "BULK",ThatsMyBis.commCallback)
 	else 
-		ThatsMyBis:SendCommMessage("TMBSync", serialized, "WHISPER", target, "BULK")
+		ThatsMyBis:SendCommMessage("TMBSync", compressed, "WHISPER", target, "BULK",ThatsMyBis.commCallback)
 	end
     
 end
 
+function ThatsMyBis:commCallback(num,total) 
+	--syncFrame:SetStatusText("Sending: ".. math.floor(tonumber(num)/1000) .. " of ".. math.floor(tonumber(total)/1000) .. " total")
+	syncFrame:SetStatusText("Sending: ".. math.floor(tonumber(num)/tonumber(total)*100).."%")
+	--ThatsMyBis:Print(num,total)
+end
+
+function ParseItemIdOrLink(item_link_or_id)
+	local itemName, itemLink, quality, _, _, class, subclass, _, equipSlot, texture, _, ClassID, SubClassID = GetItemInfo(item_link_or_id)
+	if itemLink then
+		--local itemName = string.sub(string.match(itemLink,"%[.+%]"), 2, -2)
+		local itemString = string.match(itemLink, "item[%-?%d:]+");
+		local itemId=string.match(itemString,"%d+");		
+		return itemId,itemName,quality
+	else
+		return nil
+	end
+end
+
+
+
+
 tokens = {
+	[35751]=30183,
+	[30038]=30183,
+	[30040]=30183,
+	[30042]=30183,
+	[30046]=30183,
+	[30034]=30183,
+	[30036]=30183,
+	[28427]=30183,
+	[28436]=30183,
+	[28485]=30183,
+	[28439]=30183,
+	[23565]=30183,
+	[35748]=30183,
+	[28430]=30183,
+	[30044]=30183,
+	[30032]=30183,
+	[35750]=30183,
+	[35749]=30183,
+	[28442]=30183,
+	[28433]=30183,
 	[18406]=18422,
 	[18403]=18422,
 	[18404]=18422,
