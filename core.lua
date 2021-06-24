@@ -190,32 +190,32 @@ function popupConfig()
 	checkboxGroup:AddChild(checkLabel)
 
 	local check1 = AceGUI:Create("CheckBox")
-	check1:SetLabel("Priority Note")
+	check1:SetLabel("Show Priority Note")
 	check1:SetValue(ItemListsDB.displayPrioNote)
 	checkboxGroup:AddChild(check1)
 
-	local check6 = AceGUI:Create("CheckBox")
+--[[ 	local check6 = AceGUI:Create("CheckBox")
 	check6:SetLabel("Guild Note")
 	check6:SetValue(ItemListsDB.displayGuildNote)
-	checkboxGroup:AddChild(check6)
+	checkboxGroup:AddChild(check6) ]]
 
 	local check2 = AceGUI:Create("CheckBox")
-	check2:SetLabel("Ranks")
+	check2:SetLabel("Show Ranks")
 	check2:SetValue(ItemListsDB.displayRank)
 	checkboxGroup:AddChild(check2)
 
 	local check3 = AceGUI:Create("CheckBox")
-	check3:SetLabel("Wishlists")
+	check3:SetLabel("Show Wishlists")
 	check3:SetValue(ItemListsDB.displayWishes)
 	checkboxGroup:AddChild(check3)
 
 	local check4 = AceGUI:Create("CheckBox")
-	check4:SetLabel("Priolists")
+	check4:SetLabel("Show Priolists")
 	check4:SetValue(ItemListsDB.displayPrios)
 	checkboxGroup:AddChild(check4)
 
 	local check5 = AceGUI:Create("CheckBox")
-	check5:SetLabel("Display Alt *")
+	check5:SetLabel("Color alt's gray")
 	check5:SetValue(ItemListsDB.displayAlts)
 	checkboxGroup:AddChild(check5)
 
@@ -313,9 +313,9 @@ function popupConfig()
 	check5:SetCallback("OnValueChanged", function(obj, evt, val)
 		ItemListsDB.displayAlts = check5:GetValue()
 	end)
-	check6:SetCallback("OnValueChanged", function(obj, evt, val)
+--[[ 	check6:SetCallback("OnValueChanged", function(obj, evt, val)
 		ItemListsDB.displayGuildNote = check6:GetValue()
-	end)
+	end) ]]
 	check7:SetCallback("OnValueChanged", function(obj, evt, val)
 		ItemListsDB.hideReceivedWishes = check7:GetValue()
 	end)
@@ -488,31 +488,25 @@ local function ModifyItemTooltip( tt ) -- Function for modifying the tooltip
 
 	if IsAltKeyDown() == false then --Display something different if alt is held down.
 		-- %%%%%%%%%%%%%%%%% PRIO NOTES
-		if ItemListsDB.displayPrioNote then
+		if ItemListsDB.displayPrioNote or ItemListsDB.displayRank then
 			local rankData = ""
 			local rankColorSelect = itemNotes.rank
 			if (tonumber(rankColorSelect) ~= nil) then
 				rankColorSelect = rankColorsTableConvert[tonumber(rankColorSelect)]
 			end
 
-			local itemPrioNotes = itemNotes.prioNote
-			if itemPrioNotes ~= nil and itemPrioNotes ~= "" then
-				if ItemListsDB.displayRank and (itemNotes.rank ~= "") then rankData = " | \124cFFD97025Rank: " .. rankColorsTable[rankColorSelect]..itemNotes.rank end
+			local itemPrioNotes = itemNotes.prioNote or ""
+			if not ItemListsDB.displayPrioNote then itemPrioNotes = "" end
+			if itemPrioNotes ~= "" then itemPrioNotes = itemPrioNotes .. " | " end
+
+			if ItemListsDB.displayRank and (itemNotes.rank ~= "" and itemNotes.rank ~= nil) then
+				rankData = "\124cFFD97025Rank: " .. rankColorsTable[rankColorSelect]..itemNotes.rank
+			end
+			if rankData ~= "" or itemPrioNotes ~= "" then
 				tt:AddLine("Prio Notes:")
 				tt:AddLine("\124cFFFFFFFF" .. itemPrioNotes .. rankData)
+			else
 			end
-		end
-		-- %%%%%%%%%%%%%%%%% PRIO RANK 
-		-- Edge case where someone might have prio notes disabled but rank enabled.
-		
-		if not ItemListsDB.displayPrioNote and ItemListsDB.displayRank then
-			local rankData = ""
-			local rankColorSelect = itemNotes.rank
-			if (tonumber(rankColorSelect) ~= nil) then
-				rankColorSelect = rankColorsTableConvert[tonumber(rankColorSelect)]
-			end
-				if (itemNotes.rank ~= "" and itemNotes.rank ~= nil ) then rankData = "\124cFFD97025Rank: " .. rankColorsTable[rankColorSelect]..itemNotes.rank end
-				tt:AddLine(rankData)
 		end
 
 		-- %%%%%%%%%%%%%%%%% GUILD NOTES
@@ -687,8 +681,9 @@ local function ModifyItemTooltip( tt ) -- Function for modifying the tooltip
 		if ItemListsDB.forceReceivedList == true then
 			local itemReceived = itemNotes.received
 			local receivedString = ""
-			tt:AddLine("Received item:")
+
 			if itemReceived ~= nil then
+				tt:AddLine("Received item:")
 				-- Construct the string to be displayed
 				for k,v in pairs(itemReceived) do
 					if k > ItemListsDB.maxNames then break end
@@ -703,8 +698,8 @@ local function ModifyItemTooltip( tt ) -- Function for modifying the tooltip
 	else 
 		local itemReceived = itemNotes.received
 		local receivedString = ""
-		tt:AddLine("Received item:")
 		if itemReceived ~= nil then
+			tt:AddLine("Received item:")
 			-- Construct the string to be displayed
 			for k,v in pairs(itemReceived) do
 				if k > ItemListsDB.maxNames then break end
