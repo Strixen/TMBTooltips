@@ -1,5 +1,5 @@
 ## Interface: 20501
-## Version: 0.7
+## Version: R100
 ## Title: TMB Tooltips
 ## Notes: Helper tool for Thats my BIS website.
 ## Author: Strix@Earthshaker

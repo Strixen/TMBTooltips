@@ -39,6 +39,16 @@ local rankColorsTable = {
 	N = "\124cFFFF0000"
 	}
 
+	local rankColorsTableConvert = {
+	"S",
+	"A",
+	"B",
+	"C", 
+	"D",
+	"F",
+	"N"
+	}
+
 local altColor = "\124cFFb8b8b8"
 
 local origChatFrame_OnHyperlinkShow = ChatFrame_OnHyperlinkShow
@@ -71,7 +81,7 @@ OnClick = function(self,button,down)
 end,
 OnTooltipShow = function(tooltip) -- Icon tooltip
 	tooltip:AddLine("That's My BIS Tooltips")
-	tooltip:AddLine("Version    : 0.7") -- EDIT TOC and PKMETA
+	tooltip:AddLine("Revision    : 100") -- EDIT TOC and PKMETA
 	tooltip:AddLine("Left click : Enable/Disable display")
 	tooltip:AddLine("Right click: Open config")
 	tooltip:AddLine("Hold Alt   : Change tooltip display")
@@ -480,9 +490,14 @@ local function ModifyItemTooltip( tt ) -- Function for modifying the tooltip
 		-- %%%%%%%%%%%%%%%%% PRIO NOTES
 		if ItemListsDB.displayPrioNote then
 			local rankData = ""
+			local rankColorSelect = itemNotes.rank
+			if (tonumber(rankColorSelect) ~= nil) then
+				rankColorSelect = rankColorsTableConvert[tonumber(rankColorSelect)]
+			end
+
 			local itemPrioNotes = itemNotes.prioNote
 			if itemPrioNotes ~= nil and itemPrioNotes ~= "" then
-				if ItemListsDB.displayRank and (itemNotes.rank ~= "") then rankData = " | \124cFFD97025Rank: " .. rankColorsTable[itemNotes.rank]..itemNotes.rank end
+				if ItemListsDB.displayRank and (itemNotes.rank ~= "") then rankData = " | \124cFFD97025Rank: " .. rankColorsTable[rankColorSelect]..itemNotes.rank end
 				tt:AddLine("Prio Notes:")
 				tt:AddLine("\124cFFFFFFFF" .. itemPrioNotes .. rankData)
 			end
@@ -492,7 +507,11 @@ local function ModifyItemTooltip( tt ) -- Function for modifying the tooltip
 		
 		if not ItemListsDB.displayPrioNote and ItemListsDB.displayRank then
 			local rankData = ""
-				if (itemNotes.rank ~= "") then rankData = "\124cFFD97025Rank: " .. rankColorsTable[itemNotes.rank]..itemNotes.rank end
+			local rankColorSelect = itemNotes.rank
+			if (tonumber(rankColorSelect) ~= nil) then
+				rankColorSelect = rankColorsTableConvert[tonumber(rankColorSelect)]
+			end
+				if (itemNotes.rank ~= "" and itemNotes.rank ~= nil ) then rankData = "\124cFFD97025Rank: " .. rankColorsTable[rankColorSelect]..itemNotes.rank end
 				tt:AddLine(rankData)
 		end
 
@@ -724,7 +743,13 @@ end
 
 function ParseText(input)
 	if input == nil then return "NoData" end
-	local header = "type,raid_group_name,member_name,character_name,character_class,character_is_alt,character_inactive_at,character_note,sort_order,item_name,item_id,is_offspec,note,received_at,import_id,item_note,item_prio_note,item_tier,item_tier_label,created_at,updated_at,"
+	local headers = {
+	--All export
+		"type,raid_group_name,member_name,character_name,character_class,character_is_alt,character_inactive_at,character_note,sort_order,item_name,item_id,is_offspec,note,received_at,import_id,item_note,item_prio_note,item_tier,item_tier_label,created_at,updated_at,",
+	-- Tailored tmb export
+		"type,character_name,character_class,character_is_alt,character_inactive_at,character_note,sort_order,item_id,is_offspec,received_at,item_prio_note,item_tier_label," 
+	}
+
 
 	local parsedLines = {}
 	local parsedEntries = {}
@@ -732,7 +757,7 @@ function ParseText(input)
 	for line in input:gmatch("([^\n]*)\n?") do -- Extract the lines into seperate entries in an array.
 		table.insert(parsedLines, line..",")
 	end
-	if (parsedLines[1] ~= header) then return "Wrong CSV header" end -- Validate the header
+	if (not(parsedLines[1] == headers[1] or parsedLines[1] == headers[2])) then return "Wrong CSV header" end -- Validate the header
 	
 	local headerData = {}
 	for lineKey,line in pairs(parsedLines) do
