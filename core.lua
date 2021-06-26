@@ -487,6 +487,8 @@ local function ModifyItemTooltip( tt ) -- Function for modifying the tooltip
 	if itemNotes == nil then return end -- Item not in DB, escape out of function.
 
 	if IsAltKeyDown() == false then --Display something different if alt is held down.
+		tt:AddLine("\n")	--Add line to separate from other addOns text
+
 		-- %%%%%%%%%%%%%%%%% PRIO NOTES
 		if ItemListsDB.displayPrioNote or ItemListsDB.displayRank then
 			local rankData = ""
@@ -504,7 +506,8 @@ local function ModifyItemTooltip( tt ) -- Function for modifying the tooltip
 			end
 			if rankData ~= "" or itemPrioNotes ~= "" then
 				tt:AddLine("Prio Notes:")
-				tt:AddLine("\124cFFFFFFFF" .. itemPrioNotes .. rankData)
+				tt:AddLine(rankData)
+				tt:AddLine("\124cFFFFFFFF" .. itemPrioNotes)
 			else
 			end
 		end
@@ -679,36 +682,10 @@ local function ModifyItemTooltip( tt ) -- Function for modifying the tooltip
 		end
 
 		if ItemListsDB.forceReceivedList == true then
-			local itemReceived = itemNotes.received
-			local receivedString = ""
-
-			if itemReceived ~= nil then
-				tt:AddLine("Received item:")
-				-- Construct the string to be displayed
-				for k,v in pairs(itemReceived) do
-					if k > ItemListsDB.maxNames then break end
-					local altStatus = ""
-					if ItemListsDB.displayAlts and v.character_is_alt == 1 then altStatus = "[Alt]" end
-					receivedString = receivedString .. altStatus .. classColorsTable[ v.character_class ] .. v.character_name .. " "
-				end
-				tt:AddLine( receivedString )
-			end
+			addReceivedText(itemNotes, tt)
 		end
-
 	else 
-		local itemReceived = itemNotes.received
-		local receivedString = ""
-		if itemReceived ~= nil then
-			tt:AddLine("Received item:")
-			-- Construct the string to be displayed
-			for k,v in pairs(itemReceived) do
-				if k > ItemListsDB.maxNames then break end
-				local altStatus = ""
-				if ItemListsDB.displayAlts and v.character_is_alt == 1 then altStatus = "[Alt]" end
-				receivedString = receivedString .. altStatus .. classColorsTable[ v.character_class ] .. v.character_name .. " "
-			end
-			tt:AddLine( receivedString )
-		end
+		addReceivedText(itemNotes,tt)
 	end
 end
 
@@ -729,7 +706,25 @@ end
     --return result
 end ]]
 
+function addReceivedText(itemNotes, tt)
+	local itemReceived = itemNotes.received
+	local receivedString = ""
 
+	if itemReceived ~= nil then
+		tt:AddLine("Received item:")
+		-- Construct the string to be displayed
+		for k,v in pairs(itemReceived) do
+			if k > ItemListsDB.maxNames then break end
+			local altStatus = ""
+			if ItemListsDB.displayAlts and v.character_is_alt == 1 then altStatus = "[Alt]" end
+			local OSText = ""
+			if ItemListsDB.displayOS and v.is_offspec == 1 then OSText = "\124cFFFFFFFF OS " end
+
+			receivedString = receivedString .. altStatus .. OSText .. classColorsTable[ v.character_class ] .. v.character_name .. " "
+		end
+		tt:AddLine( receivedString )
+	end
+end
 
 local function InitFrame() --Starts the listener for tooltips
 	GameTooltip:HookScript( "OnTooltipSetItem", ModifyItemTooltip )
