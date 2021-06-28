@@ -489,26 +489,29 @@ local function ModifyItemTooltip( tt ) -- Function for modifying the tooltip
 	if IsAltKeyDown() == false then --Display something different if alt is held down.
 		tt:AddLine("\n")	--Add line to separate from other addOns text
 
-		-- %%%%%%%%%%%%%%%%% PRIO NOTES
-		if ItemListsDB.displayPrioNote or ItemListsDB.displayRank then
+
+		-- %%%%%%%%%%%%%%%%% RANK
+		if ItemListsDB.displayRank then
 			local rankData = ""
 			local rankColorSelect = itemNotes.rank
 			if (tonumber(rankColorSelect) ~= nil) then
 				rankColorSelect = rankColorsTableConvert[tonumber(rankColorSelect)]
 			end
-
-			local itemPrioNotes = itemNotes.prioNote or ""
-			if not ItemListsDB.displayPrioNote then itemPrioNotes = "" end
-			if itemPrioNotes ~= "" then itemPrioNotes = itemPrioNotes .. " | " end
-
 			if ItemListsDB.displayRank and (itemNotes.rank ~= "" and itemNotes.rank ~= nil) then
-				rankData = "\124cFFD97025Rank: " .. rankColorsTable[rankColorSelect]..itemNotes.rank
+				rankData = "Rank: " .. rankColorsTable[rankColorSelect]..itemNotes.rank
 			end
-			if rankData ~= "" or itemPrioNotes ~= "" then
-				tt:AddLine("Prio Notes:")
+			if rankData ~= "" then
 				tt:AddLine(rankData)
+			end
+		end
+
+		-- %%%%%%%%%%%%%%%%% PRIO NOTES
+		if ItemListsDB.displayPrioNote then
+			local itemPrioNotes = itemNotes.prioNote
+
+			if itemPrioNotes ~= "" then
+				tt:AddLine("Prio Notes:")
 				tt:AddLine("\124cFFFFFFFF" .. itemPrioNotes)
-			else
 			end
 		end
 
