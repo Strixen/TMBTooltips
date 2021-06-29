@@ -476,11 +476,19 @@ local function ModifyItemTooltip( tt ) -- Function for modifying the tooltip
 	if not itemName then return end
 	local itemID = select( 1, GetItemInfoInstant( itemName ) )
 	
-	if itemID == nil then
+	if itemID == nil then 
 		itemID = tonumber( string.match( itemLink, "item:?(%d+):" ) )
 		if itemID == nil then
 			return
 		end
+	end
+
+	if itemID == 18423 then
+		itemID = 18422
+	elseif itemID == 19003 then
+		itemID = 19002
+	elseif itemID == 32386 then 
+		itemID = 32385
 	end
 
 	local itemNotes = ItemListsDB.itemNotes[itemID]
@@ -679,40 +687,36 @@ local function ModifyItemTooltip( tt ) -- Function for modifying the tooltip
 		end
 
 		if ItemListsDB.forceReceivedList == true then
-			local itemReceived = itemNotes.received
-			local receivedString = ""
-
-			if itemReceived ~= nil then
-				tt:AddLine("Received item:")
-				-- Construct the string to be displayed
-				for k,v in pairs(itemReceived) do
-					if k > ItemListsDB.maxNames then break end
-					local altStatus = ""
-					if ItemListsDB.displayAlts and v.character_is_alt == 1 then altStatus = "[Alt]" end
-					receivedString = receivedString .. altStatus .. classColorsTable[ v.character_class ] .. v.character_name .. " "
-				end
-				tt:AddLine( receivedString )
-			end
+			recievedLogic(itemNotes,tt)
 		end
 
 	else 
-		local itemReceived = itemNotes.received
-		local receivedString = ""
-		if itemReceived ~= nil then
-			tt:AddLine("Received item:")
-			-- Construct the string to be displayed
-			for k,v in pairs(itemReceived) do
-				if k > ItemListsDB.maxNames then break end
-				local altStatus = ""
-				if ItemListsDB.displayAlts and v.character_is_alt == 1 then altStatus = "[Alt]" end
-				receivedString = receivedString .. altStatus .. classColorsTable[ v.character_class ] .. v.character_name .. " "
-			end
-			tt:AddLine( receivedString )
-		end
+		recievedLogic(itemNotes,tt)
 	end
 end
 
--- TODO: Affects more than the static item frame. Need to look into this later
+function recievedLogic(inputData,tt)
+	local itemReceived = inputData.received
+	local receivedString = ""
+
+	if itemReceived ~= nil then
+		tt:AddLine("Received item:")
+		-- Construct the string to be displayed
+		for k,v in pairs(itemReceived) do
+			if k > ItemListsDB.maxNames then break end
+			local altStatus = ""
+			if ItemListsDB.displayAlts and v.character_is_alt == 1 then altStatus = "[Alt]" end
+			local OSText = ""
+			if ItemListsDB.displayOS and v.is_offspec == 1 then OSText = "\124cFFFFFFFF[OS]" end
+
+			receivedString = receivedString .. altStatus.. OSText .. classColorsTable[ v.character_class ] .. v.character_name .. " "
+		end
+		tt:AddLine( receivedString )
+	end
+end
+
+
+-- //TODO: Affects more than the static item frame. Need to look into this later
 --[[ ChatFrame_OnHyperlinkShow = function(...) -- Hook into the static item info window, not the tooltip.
     local chatFrame, link, text, button = ...
     local result = origChatFrame_OnHyperlinkShow(...)
