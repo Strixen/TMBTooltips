@@ -282,7 +282,6 @@ function popupConfig()
 		i = i + 1
 		textBuffer[i] = c
 	end)
-	inputfield.editBox:SetMaxBytes(2500)
 	inputfield.editBox:SetScript("OnMouseUp", nil);
 
 	inputfield:DisableButton(true)
