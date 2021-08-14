@@ -788,6 +788,10 @@ function ParseText(input)
 			tempTable = noteTable[ currentItemID ] --Try and load the item element
 			if tempTable == nil then noteTable[ currentItemID ] = {} end -- Make an array because this is the first time the item is seen
 
+			if e.received_at ~= "" then 
+				e.type = "received"
+			end
+
 			if e.type == "wishlist" then
 				tempCharTable.character_class = classToID[e.character_class]
 				tempCharTable.character_name = e.character_name
