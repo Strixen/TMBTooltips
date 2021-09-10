@@ -829,19 +829,31 @@ function ParseText(input)
 				end
 				noteTable[currentItemID].priolist = tempTable
 			elseif e.type == "received" then 
-				tempCharTable.character_class = classToID[e.character_class]
-				tempCharTable.character_name = e.character_name
-				tempCharTable.character_is_alt = tonumber(e.character_is_alt)
-				tempCharTable.is_offspec = tonumber(e.is_offspec)
-
-				if tempTable ~= nil then tempTable = tempTable.received end -- Look at the recieved element if it exist then load it
-				if tempTable == nil then --If the loaded item is nil then its the first wish for this item so just save it directly
-					tempTable = {}
-					table.insert(tempTable,tempCharTable)
-				else -- Else insert it into the old one before saving.
-					table.insert(tempTable,tempCharTable)
+				local skip = false
+				if noteTable[currentItemID].received ~= nil then
+					-- Search the array to check for duplicates
+					for reKey,reEnt in pairs(noteTable[currentItemID].received) do
+						if reEnt.character_name == e.character_name then
+							skip = true
+							break
+						end
+					end
 				end
-				noteTable[currentItemID].received = tempTable
+				if not skip then 
+					tempCharTable.character_class = classToID[e.character_class]
+					tempCharTable.character_name = e.character_name
+					tempCharTable.character_is_alt = tonumber(e.character_is_alt)
+					tempCharTable.is_offspec = tonumber(e.is_offspec)
+
+					if tempTable ~= nil then tempTable = tempTable.received end -- Look at the recieved element if it exist then load it
+					if tempTable == nil then --If the loaded item is nil then its the first wish for this item so just save it directly
+						tempTable = {}
+						table.insert(tempTable,tempCharTable)
+					else -- Else insert it into the old one before saving.
+						table.insert(tempTable,tempCharTable)
+					end
+					noteTable[currentItemID].received = tempTable
+				end
 			elseif e.type == "item_note" then 
 				noteTable[currentItemID].prioNote = e.item_prio_note
 				noteTable[currentItemID].guildNote = e.item_note
