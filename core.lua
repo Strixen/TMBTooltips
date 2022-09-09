@@ -16,7 +16,8 @@ local classColorsTable = {
 	"\124cFFFFF569",
 	"\124cFFFFFFFF",
 	"\124cFF9482C9",
-	"\124cFF69CCF0"
+	"\124cFF69CCF0",
+	"\124cFFC41E3A"
 	}
 	local classToID = {
 		Warrior = 1,
@@ -27,7 +28,8 @@ local classColorsTable = {
 		Rogue = 6,
 		Priest = 7,
 		Warlock = 8,
-		Mage = 9
+		Mage = 9,
+		["Death Knight"] = 10
 		}
 local rankColorsTable = {
 	S = "\124cFF02F3FF",
